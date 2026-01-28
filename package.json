@@ -1,0 +1,29 @@
+{
+  "name": "web-se-cam",
+  "version": "1.0.0",
+  "description": "WebSeCam, a web based security camera applicaton",
+  "main": "server.js",
+  "scripts": {
+    "setup": "npm install",
+    "lint": "npx prettier --write .",
+    "start": "npx ts-node src/main/app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-ws": "^5.0.2",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/express-ws": "^3.0.6",
+    "@types/node": "^25.0.8",
+    "@types/ws": "^8.18.1",
+    "prettier": "^3.7.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

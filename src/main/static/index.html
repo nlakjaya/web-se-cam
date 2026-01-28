@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSeCam</title>
+    <meta
+      name="description"
+      content="A web based security camera application"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0d6efd" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="WebSeCam" />
+    <link rel="apple-touch-icon" href="icon/192.png" />
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header>
+      <section>
+        <div id="videoPreviewDiv"></div>
+        <div id="audioPreviewDiv">
+          <div id="audioRedzoneDiv"></div>
+          <div id="audioThresholdDiv"></div>
+          <div id="audioLevelDiv"></div>
+        </div>
+        <div class="row">
+          <div class="col-6">
+            <label for="deviceIdInput" class="row">
+              <span class="col-6 text-end">Device ID:</span>
+              <input
+                id="deviceIdInput"
+                class="col-6"
+                type="text"
+                readonly
+                disabled
+                placeholder="Loading..."
+              />
+            </label>
+            <label for="logsLevelSelect" class="row">
+              <span class="col-6 text-end">Log Level:</span>
+              <select id="logsLevelSelect" class="col-6" disabled>
+                <option value="DEBUG">DEBUG</option>
+                <option value="INFO" selected>INFO</option>
+                <option value="WARN">WARN</option>
+                <option value="ERROR">ERROR</option>
+              </select>
+            </label>
+            <div class="row">
+              <div class="col-6"></div>
+              <label for="showLogsInput" class="col-6">
+                <input id="showLogsInput" disabled type="checkbox" />
+                <span>Show Logs</span>
+              </label>
+            </div>
+          </div>
+          <div class="col-6 text-end">
+            <label for="showPreviewInput" class="d-block">
+              <input id="showPreviewInput" disabled type="checkbox" />
+              <span>Show Preview</span>
+            </label>
+            <label for="showMotionInput" class="d-block">
+              <input id="showMotionInput" disabled type="checkbox" />
+              <span>Show Motion</span>
+            </label>
+            <label for="autoActivateInput" class="d-block">
+              <input id="autoActivateInput" disabled type="checkbox" />
+              <span>Auto Activate</span>
+            </label>
+          </div>
+        </div>
+      </section>
+      <div class="text-center">
+        <button id="activateButton" disabled class="btn btn-warning">
+          Activate
+        </button>
+        <button id="installButton" disabled class="btn btn-primary">
+          Install as App
+        </button>
+      </div>
+    </header>
+
+    <section id="logs">
+      <pre id="logsPre">
+ INFO: App initializing...
+</pre
+      >
+    </section>
+
+    <footer class="text-center">
+      <small
+        >© 2026 WebSeCam |
+        <a href="https://github.com/nlakjaya/web-se-cam">GitHub</a></small
+      >
+    </footer>
+
+    <script type="module" src="js/script.js"></script>
+
+    <script type="module" src="js/script.js"></script>
+  </body>
+</html>

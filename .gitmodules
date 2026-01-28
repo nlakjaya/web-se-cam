@@ -1,0 +1,6 @@
+[submodule "ext/bootstrap"]
+	path = ext/bootstrap
+	url = git@github.com:twbs/bootstrap.git
+[submodule "ext/ts-browser"]
+	path = ext/ts-browser
+	url = git@github.com:klesun/ts-browser.git

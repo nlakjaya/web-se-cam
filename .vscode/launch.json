@@ -2,12 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "node",
+      "type": "node-terminal",
       "request": "launch",
-      "name": "Start Server",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/server.js",
-      "outFiles": ["${workspaceFolder}/**/*.js"]
+      "name": "Run: npm start",
+      "command": "npm start"
     }
   ]
 }
