@@ -1,10 +1,6 @@
-// @ts-expect-error
 import { DeviceAccess } from "../../../ts/service/device-access";
-// @ts-expect-error
 import { Storage } from "../../../ts/service/storage";
-// @ts-expect-error
 import { MediaRecorder } from "../../../ts/service/media-recorder";
-// @ts-expect-error
 import { LOGGER } from "../../../ts/util/logger";
 import { sleep } from "../../ts/base";
 

@@ -1,6 +1,4 @@
-// @ts-expect-error
 import { Uploader } from "../../../ts/service/uploader";
-// @ts-expect-error
 import { Storage } from "../../../ts/service/storage";
 import { sleep } from "../../ts/base";
 

@@ -1,4 +1,3 @@
-// @ts-expect-error
 import { Logger, LOGGER } from "../../../ts/util/logger";
 
 const app = document.getElementById("app");

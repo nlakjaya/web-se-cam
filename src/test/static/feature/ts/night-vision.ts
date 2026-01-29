@@ -1,10 +1,6 @@
-// @ts-expect-error
 import { VideoPipeline } from "../../../ts/service/video-pipeline";
-// @ts-expect-error
 import { DeviceAccess } from "../../../ts/service/device-access";
-// @ts-expect-error
 import { NightVision } from "../../../ts/service/night-vision";
-// @ts-expect-error
 import { LOGGER } from "../../../ts/util/logger";
 import { sleep } from "../../ts/base";
 

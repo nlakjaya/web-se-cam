@@ -1,4 +1,4 @@
-import { loadModule } from "./ts-browser/ts-browser.js";
+import { loadModule } from "https://klesun.github.io/ts-browser/src/ts-browser.js";
 loadModule("ts/main");
 
 const logger = {

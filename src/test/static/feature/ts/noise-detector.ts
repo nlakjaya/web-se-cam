@@ -1,6 +1,4 @@
-// @ts-expect-error
 import { DeviceAccess } from "../../../ts/service/device-access";
-// @ts-expect-error
 import { NoiseDetector } from "../../../ts/service/noise-detector";
 import { sleep } from "../../ts/base";
 

@@ -1,4 +1,3 @@
-// @ts-expect-error
 import { LOGGER } from "../../ts/util/logger";
 
 const log = document.getElementById("log");

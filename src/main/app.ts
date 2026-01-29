@@ -6,7 +6,6 @@ import { getHandlerSubscribe } from "./handler/signaling";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const STATIC_FILES = "./static";
-const STATIC_TEST_FILES = "../test/static";
 
 const UPLOAD_PATH = process.env.UPLOAD_PATH || "./upload";
 const STORAGE_QUOTA = process.env.STORAGE_QUOTA
@@ -23,8 +22,6 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, STATIC_FILES)));
 console.log(`Static files served from: ${STATIC_FILES}`);
-app.use("/test", express.static(path.join(__dirname, STATIC_TEST_FILES)));
-console.log(`Static test files served from: ${STATIC_TEST_FILES}`);
 
 app.post("/upload", getHandlerUpload(UPLOAD_PATH, STORAGE_QUOTA));
 app.ws("/subscribe", getHandlerSubscribe(MAX_CLIENTS_COUNT));

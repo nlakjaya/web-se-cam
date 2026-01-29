@@ -1,8 +1,5 @@
-// @ts-expect-error
 import { MotionDetector } from "../../../ts/service/motion-detector";
-// @ts-expect-error
 import { VideoPipeline } from "../../../ts/service/video-pipeline";
-// @ts-expect-error
 import { DeviceAccess } from "../../../ts/service/device-access";
 import { sleep } from "../../ts/base";
 

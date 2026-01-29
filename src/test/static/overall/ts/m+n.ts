@@ -1,20 +1,12 @@
-// @ts-expect-error
 import { Storage } from "../../../ts/service/storage";
 // import { Uploader } from "../../ts/service/uploader";
-// @ts-expect-error
 import { DeviceAccess } from "../../../ts/service/device-access";
-// @ts-expect-error
 import { VideoPipeline } from "../../../ts/service/video-pipeline";
 // import { NightVision } from "../../ts/service/night-vision";
-// @ts-expect-error
 import { NoiseDetector } from "../../../ts/service/noise-detector";
-// @ts-expect-error
 import { MotionDetector } from "../../../ts/service/motion-detector";
-// @ts-expect-error
 import { VideoOverlay } from "../../../ts/service/video-overlay";
-// @ts-expect-error
 import { MediaRecorder } from "../../../ts/service/media-recorder";
-// @ts-expect-error
 import { ContinuousRecorder } from "../../../ts/service/continuous-recorder";
 import { sleep } from "../../ts/base";
 

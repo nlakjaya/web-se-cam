@@ -1,4 +1,3 @@
-// @ts-expect-error
 import { Signaling } from "../../../ts/service/signaling";
 import { sleep } from "../../ts/base";
 
