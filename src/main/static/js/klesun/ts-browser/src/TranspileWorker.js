@@ -7,7 +7,8 @@ const workerPath = workerUrl.replace(/\/[^/]+$/, "/");
 
 const main = () => {
   self.importScripts(
-    workerPath + "../../../typescriptservices-min-js-builds/v5.4.5/typescript.js",
+    workerPath +
+      "../../../typescriptservices-min-js-builds/v5.4.5/typescript.js",
     workerPath + "/UrlPathResolver_sideEffects.js",
     workerPath + "/actions/ParseTsModule_sideEffects.js",
   );

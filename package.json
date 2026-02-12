@@ -7,7 +7,7 @@
     "setup": "npm install",
     "lint": "npx prettier --write package.json tsconfig.json .vscode/ src/",
     "start": "npx ts-node src/main/app.ts",
-    "deploy:github-pages": "echo TODO; exit 1"
+    "test": "echo TODO; exit 1"
   },
   "keywords": [],
   "author": "",

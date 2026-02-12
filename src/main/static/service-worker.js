@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   "js/klesun/ts-browser/src/UrlPathResolver.js",
   "js/klesun/ts-browser/src/utils.js",
   "js/klesun/ts-browser/src/WorkerManager.js",
-  "js/typescriptservices-min-js-builds/v5.4.5/typescript.js"
+  "js/typescriptservices-min-js-builds/v5.4.5/typescript.js",
 ];
 
 const logger = {
