@@ -2,6 +2,11 @@
   outline: 1px dotted gray;
 }/**/
 
+header {
+  margin: auto;
+  max-width: 720px;
+}
+
 section {
   box-shadow: lightgray 2px 2px 12px;
   margin: 10px;

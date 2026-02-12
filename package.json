@@ -5,9 +5,9 @@
   "main": "server.js",
   "scripts": {
     "setup": "npm install",
-    "lint": "npx prettier --write .",
+    "lint": "npx prettier --write package.json tsconfig.json .vscode/ src/",
     "start": "npx ts-node src/main/app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy:github-pages": "echo TODO; exit 1"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
     "@types/express": "^5.0.6",
     "@types/express-ws": "^3.0.6",
     "@types/node": "^25.0.8",
+    "@types/serviceworker": "^0.0.180",
     "@types/ws": "^8.18.1",
     "prettier": "^3.7.4",
     "ts-node": "^10.9.2",

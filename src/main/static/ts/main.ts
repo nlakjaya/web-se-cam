@@ -200,6 +200,9 @@ function initApp() {
     "showMotion",
     "true",
   );
+  (elements.showMotionInput as HTMLInputElement).disabled = !(
+    elements.showPreviewInput as HTMLInputElement
+  ).checked;
 
   initElement(
     "autoActivateInput",

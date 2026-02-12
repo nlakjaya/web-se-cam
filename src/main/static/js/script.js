@@ -1,4 +1,4 @@
-import { loadModule } from "./ts-browser/ts-browser.js";
+import { loadModule } from "./klesun/ts-browser/src/ts-browser.js";
 loadModule("ts/main");
 
 const logger = {
@@ -9,7 +9,7 @@ const logger = {
 
 async function registerServiceWorker() {
   try {
-    await navigator.serviceWorker.register("js/service-worker.js");
+    await navigator.serviceWorker.register("../service-worker.js");
     logger.debug("Service Worker registered");
   } catch (error) {
     logger.debug("Service Worker registration failed:", error);
