@@ -1,14 +1,14 @@
-import { LOGGER } from "../../ts/util/logger";
+import { LoggerConfig, LoggerConfigReload } from "../../ts/util/logger";
 
 const log = document.getElementById("log");
 if (log) {
   log.textContent = "";
-  LOGGER.subscribers.push(
+  LoggerConfig.subscribers.push(
     (...messages: any[]) => (log.textContent += messages.join(" ") + "\n"),
   );
 }
-LOGGER.level = "DEBUG";
-LOGGER.reload();
+LoggerConfig.level = "DEBUG";
+LoggerConfigReload();
 
 console.clear();
 

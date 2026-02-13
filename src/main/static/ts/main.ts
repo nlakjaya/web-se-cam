@@ -1,5 +1,5 @@
+import { Logger, LoggerConfig, LoggerConfigReload } from "./util/logger";
 import { getDeviceId } from "./util/device-id";
-import { LOGGER, Logger } from "./util/logger";
 import { getParameter, setParameter } from "./util/parameter";
 
 import { DeviceAccess } from "./service/device-access";
@@ -10,7 +10,7 @@ import { NoiseDetector } from "./service/noise-detector";
 
 const logs = document.getElementById("logsPre") as HTMLPreElement;
 logs.textContent = "";
-LOGGER.subscribers.push(
+LoggerConfig.subscribers.push(
   (...messages: any[]) => (logs.textContent += messages.join(" ") + "\n"),
 );
 const logger = new Logger("App");
@@ -92,8 +92,8 @@ function initStaticElements() {
   initElement(
     "logsLevelSelect",
     (element) => {
-      LOGGER.level = (element as HTMLSelectElement).value;
-      LOGGER.reload();
+      LoggerConfig.level = (element as HTMLSelectElement).value;
+      LoggerConfigReload();
     },
     "logsLevel",
     "INFO",

@@ -1,10 +1,11 @@
 import { VideoPipeline } from "../../../ts/service/video-pipeline";
 import { DeviceAccess } from "../../../ts/service/device-access";
 import { NightVision } from "../../../ts/service/night-vision";
-import { LOGGER } from "../../../ts/util/logger";
+import { Logger } from "../../../ts/util/logger";
 import { sleep } from "../../ts/base";
 
 const app = document.getElementById("app");
+const logger = new Logger("Test");
 
 async function happyPath() {
   const video = new VideoPipeline();
@@ -72,7 +73,7 @@ async function happyPath() {
         app.textContent = "Test Completed" as string;
       }
     }
-    LOGGER.debug("cycle options: ", JSON.stringify(optionsCycle[idx]));
+    logger.debug("cycle options: ", JSON.stringify(optionsCycle[idx]));
     nightVision.updateOptions(optionsCycle[idx++]);
   }, 2000);
 }

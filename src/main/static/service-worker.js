@@ -1,4 +1,4 @@
-const sw = self; // as ServiceWorkerGlobalScope;
+import { Logger } from "./js/logger.js";
 
 const CACHE_KEY = "websecam-v0.1";
 const STATIC_ASSETS = [
@@ -20,11 +20,8 @@ const STATIC_ASSETS = [
   "js/typescriptservices-min-js-builds/v5.4.5/typescript.js",
 ];
 
-const logger = {
-  debug: (
-    ...messages //:any[]
-  ) => console.log("DEBUG [service worker]", ...messages),
-};
+const sw = self; // as ServiceWorkerGlobalScope;
+const logger = new Logger("service-worker.js");
 
 async function cacheFirst(event) {
   const cached = await caches.match(event.request);

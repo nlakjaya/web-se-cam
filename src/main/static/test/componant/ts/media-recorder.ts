@@ -1,10 +1,11 @@
 import { DeviceAccess } from "../../../ts/service/device-access";
 import { Storage } from "../../../ts/service/storage";
 import { MediaRecorder } from "../../../ts/service/media-recorder";
-import { LOGGER } from "../../../ts/util/logger";
 import { sleep } from "../../ts/base";
+import { Logger } from "../../../ts/util/logger";
 
 const app = document.getElementById("app");
+const logger = new Logger("Test");
 
 async function happyPath() {
   const videoElement = document.createElement("video");
@@ -18,7 +19,7 @@ async function happyPath() {
   videoElement.play();
   storage.init();
 
-  LOGGER.info("Recording... (without pre-roll)");
+  logger.info("Recording... (without pre-roll)");
   const recorder = new MediaRecorder({}, ...mediaStream.getTracks());
   recorder.start();
   if (app) {
@@ -27,21 +28,21 @@ async function happyPath() {
 
   await sleep(3000);
 
-  LOGGER.info("Saving... (without pre-roll)");
+  logger.info("Saving... (without pre-roll)");
   let blob = await recorder.stop();
   storage.save("wsc-media-recorder-test.webm", blob);
 
-  LOGGER.info("Pre-Rolling...");
+  logger.info("Pre-Rolling...");
   recorder.start(1000, 2000);
 
   await sleep(5000);
 
-  LOGGER.info("Recording... (with pre-roll)");
+  logger.info("Recording... (with pre-roll)");
   recorder.start();
 
   await sleep(3000);
 
-  LOGGER.info("Saving... (with pre-roll)");
+  logger.info("Saving... (with pre-roll)");
   blob = await recorder.stop();
   storage.save("wsc-pre-roll-media-recorder-test.webm", blob);
 

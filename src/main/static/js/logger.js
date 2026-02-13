@@ -4,26 +4,26 @@ export const LoggerConfig = {
 };
 
 const LOGGER = {
-  error: (service: string, ...messages: any[]) => {
+  error: (service, ...messages) => {
     LoggerConfig.subscribers.forEach((subscriber) =>
       subscriber("ERROR", service, ...messages),
     );
   },
-  warn: (_service: string, ..._messages: any[]) => {},
-  info: (_service: string, ..._messages: any[]) => {},
-  debug: (_service: string, ..._messages: any[]) => {},
-  count: (_service: string, _label: string) => {},
-  time: (_service: string, _label: string) => {},
-  timeEnd: (_service: string, _label: string) => {},
+  warn: (_service, ..._messages) => {},
+  info: (_service, ..._messages) => {},
+  debug: (_service, ..._messages) => {},
+  count: (_service, _label) => {},
+  time: (_service, _label) => {},
+  timeEnd: (_service, _label) => {},
 };
 
 export function LoggerConfigReload() {
-  LOGGER.warn = (_service: string, ..._messages: any[]) => {};
-  LOGGER.info = (_service: string, ..._messages: any[]) => {};
-  LOGGER.debug = (_service: string, ..._messages: any[]) => {};
-  LOGGER.count = (_service: string, ..._messages: any[]) => {};
-  LOGGER.time = (_service: string, ..._messages: any[]) => {};
-  LOGGER.timeEnd = (_service: string, ..._messages: any[]) => {};
+  LOGGER.warn = (_service, ..._messages) => {};
+  LOGGER.info = (_service, ..._messages) => {};
+  LOGGER.debug = (_service, ..._messages) => {};
+  LOGGER.count = (_service, ..._messages) => {};
+  LOGGER.time = (_service, ..._messages) => {};
+  LOGGER.timeEnd = (_service, ..._messages) => {};
   switch (LoggerConfig.level) {
     case "DEBUG":
       LOGGER.debug = (service, ...messages) => {
@@ -62,37 +62,37 @@ export function LoggerConfigReload() {
 LoggerConfigReload();
 
 export class Logger {
-  service: string;
+  service;
 
-  constructor(service: string) {
+  constructor(service) {
     this.service = service;
   }
 
-  error(...messages: any[]) {
+  error(...messages) {
     LOGGER.error(this.service, ...messages);
   }
 
-  warn(...messages: any[]) {
+  warn(...messages) {
     LOGGER.warn(this.service, ...messages);
   }
 
-  info(...messages: any[]) {
+  info(...messages) {
     LOGGER.info(this.service, ...messages);
   }
 
-  debug(...messages: any[]) {
+  debug(...messages) {
     LOGGER.debug(this.service, ...messages);
   }
 
-  count(label: string) {
+  count(label) {
     LOGGER.count(this.service, label);
   }
 
-  time(label: string) {
+  time(label) {
     LOGGER.time(this.service, label);
   }
 
-  timeEnd(label: string) {
+  timeEnd(label) {
     LOGGER.timeEnd(this.service, label);
   }
 }

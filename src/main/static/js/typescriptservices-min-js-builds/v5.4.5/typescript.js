@@ -174378,22 +174378,20 @@ var ts = (() => {
               const { file: n, project: r } = this.getFileAndProject(e),
                 i = this.projectService.getScriptInfoForNormalizedPath(n),
                 o = this.getPosition(e, i),
-                a = r
-                  .getLanguageService()
-                  .getCompletionsAtPosition(
-                    n,
-                    o,
-                    {
-                      ...Fve(this.getPreferences(n)),
-                      triggerCharacter: e.triggerCharacter,
-                      triggerKind: e.triggerKind,
-                      includeExternalModuleExports:
-                        e.includeExternalModuleExports,
-                      includeInsertTextCompletions:
-                        e.includeInsertTextCompletions,
-                    },
-                    r.projectService.getFormatCodeOptions(n),
-                  );
+                a = r.getLanguageService().getCompletionsAtPosition(
+                  n,
+                  o,
+                  {
+                    ...Fve(this.getPreferences(n)),
+                    triggerCharacter: e.triggerCharacter,
+                    triggerKind: e.triggerKind,
+                    includeExternalModuleExports:
+                      e.includeExternalModuleExports,
+                    includeInsertTextCompletions:
+                      e.includeInsertTextCompletions,
+                  },
+                  r.projectService.getFormatCodeOptions(n),
+                );
               if (void 0 === a) return;
               if ("completions-full" === t) return a;
               const s = e.prefix || "",
@@ -174866,21 +174864,19 @@ var ts = (() => {
               const { file: n, project: r } = this.getFileAndProject(
                   e.scope.args,
                 ),
-                i = r
-                  .getLanguageService()
-                  .organizeImports(
-                    {
-                      fileName: n,
-                      mode:
-                        e.mode ??
-                        (e.skipDestructiveCodeActions
-                          ? "SortAndCombine"
-                          : void 0),
-                      type: "file",
-                    },
-                    this.getFormatOptions(n),
-                    this.getPreferences(n),
-                  );
+                i = r.getLanguageService().organizeImports(
+                  {
+                    fileName: n,
+                    mode:
+                      e.mode ??
+                      (e.skipDestructiveCodeActions
+                        ? "SortAndCombine"
+                        : void 0),
+                    type: "file",
+                  },
+                  this.getFormatOptions(n),
+                  this.getPreferences(n),
+                );
               return t ? this.mapTextChangesToCodeEdits(i) : i;
             }
             getEditsForFileRename(e, t) {

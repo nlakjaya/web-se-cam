@@ -2,7 +2,7 @@
 
 WebSeCam is a web based security camera applicaton,
 that has standalone Frontend and self hostable Backend
-(optionally infratrcutre-as-code on private cloud deployments).
+(optionally, infratrcutre-as-code on private cloud deployments).
 
 ## Features
 

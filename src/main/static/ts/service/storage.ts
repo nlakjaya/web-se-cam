@@ -18,7 +18,7 @@ export class Storage {
   }
 
   async init(options?: Partial<Options>) {
-    logger.debug("requestPermissions called");
+    logger.debug("init called:", options);
 
     this.options = { ...this.options, ...options };
     if (this.options.browserStorage) {
