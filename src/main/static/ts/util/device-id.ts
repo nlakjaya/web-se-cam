@@ -14,5 +14,5 @@ export function getDeviceId(): string {
       .toUpperCase();
     setParameter("deviceId", deviceId);
     return deviceId;
-  });
+  }) as string;
 }

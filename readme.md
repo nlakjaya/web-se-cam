@@ -7,9 +7,9 @@ that has standalone Frontend and self hostable Backend
 ## Features
 
 - Total Privacy, Free and Open Source Forever
-- Motion and Noise Alerts
-- Pre-roll Recording on any Alert
-- Loop Recording (Same or Different Quality)
+- _TODO:_ Motion and Noise Alerts
+- _TODO:_ Pre-roll Recording on any Alert
+- _TODO:_ Loop Recording (Same or Different Quality)
 - Standalone Frontend (Optional Backend)
 - _TODO:_ Live View (Requires Backend)
 - _TODO:_ Event Alerts (Low Battery, Goes Offline, Ambient Light Sensed etc.)
@@ -18,7 +18,7 @@ that has standalone Frontend and self hostable Backend
 ## Frontend (Web Application)
 
 - A PWA (Progrssive Web Application) running on each camera device (old smart phone, laptop, etc)
-- Start/Stop button to activate/deactivate both camera and microphone
+- Button to Activate/Deactivate both camera and microphone
 - Preview panel to see the web camera feed
 - Audio level indicator to show microphone activity
 - Control panel which configures features (extensible)

@@ -11,6 +11,7 @@ type Options = {
     width?: number;
     height?: number;
     frameRate?: number;
+    facingMode?: "user" | "environment";
   };
   audio?: {
     id?: string;
@@ -25,42 +26,21 @@ type Options = {
 
 const logger = new Logger("DeviceAccess");
 export class DeviceAccess {
-  private options: Options;
   private stream?: MediaStream;
   private videoDevices: MediaDeviceInfo[];
   private audioDevices: MediaDeviceInfo[];
 
   constructor() {
-    this.options = {
-      video: { width: 640, height: 480, frameRate: 15 },
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-      },
-    };
-
     this.videoDevices = [];
     this.audioDevices = [];
 
     logger.debug("instance created");
   }
 
-  updateOptions(options: Partial<Options>) {
-    logger.debug("updateOptions called:", options);
-    this.options = {
-      video:
-        options.video === undefined
-          ? undefined
-          : { ...this.options.video, ...options.video },
-      audio:
-        options.audio === undefined
-          ? undefined
-          : { ...this.options.audio, ...options.audio },
-    };
-  }
-
-  async requestPermissions(): Promise<boolean> {
+  async requestPermissions(options?: {
+    audio: boolean;
+    video: boolean;
+  }): Promise<boolean> {
     logger.debug("requestPermissions called");
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -69,8 +49,8 @@ export class DeviceAccess {
 
       // Request permissions by getting a stream and stopping immediately
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: this.options.audio !== undefined,
-        video: this.options.video !== undefined,
+        audio: options?.audio ?? true,
+        video: options?.video ?? true,
       });
       stream.getTracks().forEach((track) => track.stop());
 
@@ -281,59 +261,76 @@ export class DeviceAccess {
     }
   }
 
-  async start() {
-    logger.debug("start called");
+  async start(options?: Partial<Options>) {
+    logger.debug("start called:", options);
 
     try {
-      const constraints: MediaStreamConstraints = {
-        video: this.options.video
-          ? {
-              deviceId: this.options.video.id
-                ? { exact: this.options.video.id }
-                : undefined,
-              width: this.options.video.width
-                ? { exact: this.options.video.width }
-                : undefined,
-              height: this.options.video.height
-                ? { exact: this.options.video.height }
-                : undefined,
-              frameRate: this.options.video.frameRate
-                ? { exact: this.options.video.frameRate }
-                : undefined,
-            }
-          : false,
-        audio: this.options.audio
-          ? {
-              deviceId: this.options.audio.id
-                ? { exact: this.options.audio.id }
-                : undefined,
-              echoCancellation: this.options.audio.echoCancellation
-                ? { exact: this.options.audio.echoCancellation }
-                : undefined,
-              noiseSuppression: this.options.audio.noiseSuppression
-                ? { exact: this.options.audio.noiseSuppression }
-                : undefined,
-              autoGainControl: this.options.audio.autoGainControl
-                ? { exact: this.options.audio.autoGainControl }
-                : undefined,
-              sampleRate: this.options.audio.sampleRate
-                ? { exact: this.options.audio.sampleRate }
-                : undefined,
-              channelCount: this.options.audio.channelCount
-                ? { exact: this.options.audio.channelCount }
-                : undefined,
-              sampleSize: this.options.audio.sampleSize
-                ? { exact: this.options.audio.sampleSize }
-                : undefined,
-            }
-          : false,
-      };
+      const constraints: MediaStreamConstraints = options
+        ? {
+            video: options.video
+              ? {
+                  deviceId: options.video.id
+                    ? { exact: options.video.id }
+                    : undefined,
+                  width: options.video.width
+                    ? { exact: options.video.width }
+                    : 640,
+                  height: options.video.height
+                    ? { exact: options.video.height }
+                    : 480,
+                  frameRate: options.video.frameRate
+                    ? { exact: options.video.frameRate }
+                    : 15,
+                  facingMode: options.video.facingMode
+                    ? { exact: options.video.facingMode }
+                    : "user",
+                }
+              : false,
+            audio: options.audio
+              ? {
+                  deviceId: options.audio.id
+                    ? { exact: options.audio.id }
+                    : undefined,
+                  echoCancellation: options.audio.echoCancellation
+                    ? { exact: options.audio.echoCancellation }
+                    : false,
+                  noiseSuppression: options.audio.noiseSuppression
+                    ? { exact: options.audio.noiseSuppression }
+                    : false,
+                  autoGainControl: options.audio.autoGainControl
+                    ? { exact: options.audio.autoGainControl }
+                    : false,
+                  sampleRate: options.audio.sampleRate
+                    ? { exact: options.audio.sampleRate }
+                    : undefined,
+                  channelCount: options.audio.channelCount
+                    ? { exact: options.audio.channelCount }
+                    : undefined,
+                  sampleSize: options.audio.sampleSize
+                    ? { exact: options.audio.sampleSize }
+                    : undefined,
+                }
+              : false,
+          }
+        : {
+            video: {
+              width: 640,
+              height: 480,
+              frameRate: 15,
+              facingMode: "user",
+            },
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false,
+            },
+          };
       logger.debug("start constraints:", constraints);
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       logger.info("Stream Started");
       return this.stream;
     } catch (error) {
-      logger.error("start failed:", this.options, error);
+      logger.error("start failed:", options, error);
       throw new Error("Media activation failed", { cause: error });
     }
   }

@@ -84,6 +84,7 @@ export class ContinuousRecorder {
 
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
+      this.timeoutId = undefined;
       if (this.mediaRecorder) {
         const blob = await this.mediaRecorder.stop();
         if (this.options.onSave) {

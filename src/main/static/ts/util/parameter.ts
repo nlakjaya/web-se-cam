@@ -4,11 +4,16 @@ export function setParameter(key: string, value: string) {
 
 export function getParameter(
   key: string,
-  defaultValue: string | (() => string),
+  defaultValue?: string | (() => string),
 ) {
   let parameter = localStorage.getItem(key);
   if (!parameter) {
-    parameter = typeof defaultValue == "string" ? defaultValue : defaultValue();
+    if (defaultValue !== undefined) {
+      parameter =
+        typeof defaultValue == "string" ? defaultValue : defaultValue();
+    } else {
+      return undefined;
+    }
   }
   return parameter;
 }

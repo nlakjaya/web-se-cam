@@ -1,5 +1,5 @@
 export const LoggerConfig = {
-  level: "DEBUG",
+  level: "INFO",
   subscribers: [console.log],
 };
 

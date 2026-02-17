@@ -29,19 +29,18 @@ export class Storage {
       ) {
         const persisted = await navigator.storage.persisted();
         if (persisted) {
-          logger.info("Persisted:", "Browser Storage");
+          logger.info("Browser Storage:", "Persisted");
         } else {
           const granted = await navigator.storage.persist();
           if (granted) {
-            logger.info("Permissions granted:", "Browser Storage");
+            logger.info("Browser Storage:", "Persistency granted");
           } else {
-            logger.error("permissions denied:", "browser storage");
-            this.options.browserStorage = undefined;
-            if (!this.options.noDownload) {
-              logger.info("Fallback to Download on Save");
-            }
+            logger.error("browser storage:", "persistency denied");
+            logger.warn("browser storage may get cleared!");
           }
         }
+      }
+      if (indexedDB) {
         if (this.options.browserStorage) {
           const options = this.options.browserStorage;
           await new Promise((resolve, reject) => {
@@ -69,10 +68,17 @@ export class Storage {
               logger.error(`indexedDB.open("${dbName}") failed:`, error);
               reject(error);
             };
+            request.onblocked = (event) => {
+              logger.error(`indexedDB.open("${dbName}") blocked:`, event);
+              this.options.browserStorage = undefined;
+              if (!this.options.noDownload) {
+                logger.info("Fallback to Download on Save");
+              }
+            };
           });
         }
       } else {
-        logger.error("unsupported:", "browser storage");
+        logger.error("browser storage:", "unsupported");
         this.options.browserStorage = undefined;
         if (!this.options.noDownload) {
           logger.info("Fallback to Download on Save");
