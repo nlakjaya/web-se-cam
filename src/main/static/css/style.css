@@ -20,6 +20,7 @@ section {
   margin-bottom: 10px;
   display: none;
   position: relative;
+  overflow: hidden;
   line-height: 0;
 }
 
@@ -63,7 +64,7 @@ section {
   background: darkgreen;
   top: -100%;
   height: 100%;
-  width: 12.8%;
+  width: 0%;
 }
 
 #audioLevelDiv {

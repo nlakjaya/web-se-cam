@@ -7,6 +7,12 @@ type Options = {
   // smoothingConstant?: number;
 };
 
+export const defaultOptions: Options = {
+  detectionThreshold: 20,
+  bufferLengthMs: 45,
+  bufferSize: 2048,
+};
+
 const logger = new Logger("NoiseDetector");
 export class NoiseDetector {
   private options: Options;
@@ -19,11 +25,7 @@ export class NoiseDetector {
   public peakLevel: number;
 
   constructor() {
-    this.options = {
-      detectionThreshold: 20,
-      bufferLengthMs: 45,
-      bufferSize: 2048,
-    };
+    this.options = defaultOptions;
     this.audioContext = new window.AudioContext();
     this.analyzer = this.audioContext.createAnalyser();
     this.mediaStreamSource = undefined;

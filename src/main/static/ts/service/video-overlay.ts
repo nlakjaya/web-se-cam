@@ -23,6 +23,28 @@ type Options = {
   };
 };
 
+export const defaultOptions: Options = {
+  margin: 20,
+  showDateTime: true,
+  showStats: false,
+  format: {
+    font: "20px Arial",
+    fillStyle: "#FFF",
+    shadowColor: "#000",
+    shadowOffsetX: 2,
+    shadowOffsetY: 2,
+    shadowBlur: 4,
+  },
+  footerText: "WebSeCam © 2026",
+  footerFormat: {
+    fillStyle: "rgba(255, 255, 255, 0.4)",
+    shadowColor: "rgba(0, 0, 0, 0.4)",
+    shadowOffsetX: 1,
+    shadowOffsetY: 1,
+    shadowBlur: 2,
+  },
+};
+
 const logger = new Logger("VideoOverlay");
 export class VideoOverlay implements VideoLayer {
   private stats: { frameCount: number; lastFrameMs?: number };
@@ -32,27 +54,7 @@ export class VideoOverlay implements VideoLayer {
     const canvasElement = document.createElement("canvas");
 
     this.stats = { frameCount: 0 };
-    this.options = {
-      margin: 20,
-      showDateTime: true,
-      showStats: false,
-      format: {
-        font: "20px Arial",
-        fillStyle: "#FFF",
-        shadowColor: "#000",
-        shadowOffsetX: 2,
-        shadowOffsetY: 2,
-        shadowBlur: 4,
-      },
-      footerText: "WebSeCam © 2026", // I'm fine if you remove the copyright text
-      footerFormat: {
-        fillStyle: "rgba(255, 255, 255, 0.4)",
-        shadowColor: "rgba(0, 0, 0, 0.4)",
-        shadowOffsetX: 1,
-        shadowOffsetY: 1,
-        shadowBlur: 2,
-      },
-    };
+    this.options = defaultOptions;
 
     logger.debug("instance created");
   }

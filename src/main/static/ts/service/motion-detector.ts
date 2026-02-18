@@ -11,6 +11,13 @@ type Options = {
   // previewMask?: boolean;
 };
 
+export const defaultOptions: Options = {
+  downScaleFactor: 4,
+  motionBlur: 0.6,
+  detectionThreshold: 20,
+  marker: { style: "cross", color: "#F33", size: 2 },
+};
+
 const logger = new Logger("MotionDetector");
 export class MotionDetector implements VideoLayer {
   private options: Options;
@@ -24,12 +31,7 @@ export class MotionDetector implements VideoLayer {
     const canvasElement = document.createElement("canvas");
     this.ctx = canvasElement.getContext("2d") as CanvasRenderingContext2D;
 
-    this.options = {
-      downScaleFactor: 4,
-      motionBlur: 0.6,
-      detectionThreshold: 20,
-      marker: { style: "cross", color: "#F33", size: 2 },
-    };
+    this.options = defaultOptions;
     this.originalWidth = 640;
     this.originalHeight = 480;
     this.triggers = [];

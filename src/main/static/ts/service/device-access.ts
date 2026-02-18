@@ -24,6 +24,20 @@ type Options = {
   };
 };
 
+export const defaultOptions: Options = {
+  video: {
+    width: 640,
+    height: 480,
+    frameRate: 15,
+    facingMode: "user",
+  },
+  audio: {
+    echoCancellation: false,
+    noiseSuppression: false,
+    autoGainControl: false,
+  },
+};
+
 const logger = new Logger("DeviceAccess");
 export class DeviceAccess {
   private stream?: MediaStream;
@@ -263,68 +277,64 @@ export class DeviceAccess {
 
   async start(options?: Partial<Options>) {
     logger.debug("start called:", options);
+    options = options
+      ? {
+          video: options?.video
+            ? { ...defaultOptions.video, ...options.video }
+            : undefined,
+          audio: options?.audio
+            ? { ...defaultOptions.audio, ...options.audio }
+            : undefined,
+        }
+      : defaultOptions;
 
     try {
-      const constraints: MediaStreamConstraints = options
-        ? {
-            video: options.video
-              ? {
-                  deviceId: options.video.id
-                    ? { exact: options.video.id }
-                    : undefined,
-                  width: options.video.width
-                    ? { exact: options.video.width }
-                    : 640,
-                  height: options.video.height
-                    ? { exact: options.video.height }
-                    : 480,
-                  frameRate: options.video.frameRate
-                    ? { exact: options.video.frameRate }
-                    : 15,
-                  facingMode: options.video.facingMode
-                    ? { exact: options.video.facingMode }
-                    : "user",
-                }
-              : false,
-            audio: options.audio
-              ? {
-                  deviceId: options.audio.id
-                    ? { exact: options.audio.id }
-                    : undefined,
-                  echoCancellation: options.audio.echoCancellation
-                    ? { exact: options.audio.echoCancellation }
-                    : false,
-                  noiseSuppression: options.audio.noiseSuppression
-                    ? { exact: options.audio.noiseSuppression }
-                    : false,
-                  autoGainControl: options.audio.autoGainControl
-                    ? { exact: options.audio.autoGainControl }
-                    : false,
-                  sampleRate: options.audio.sampleRate
-                    ? { exact: options.audio.sampleRate }
-                    : undefined,
-                  channelCount: options.audio.channelCount
-                    ? { exact: options.audio.channelCount }
-                    : undefined,
-                  sampleSize: options.audio.sampleSize
-                    ? { exact: options.audio.sampleSize }
-                    : undefined,
-                }
-              : false,
-          }
-        : {
-            video: {
-              width: 640,
-              height: 480,
-              frameRate: 15,
-              facingMode: "user",
-            },
-            audio: {
-              echoCancellation: false,
-              noiseSuppression: false,
-              autoGainControl: false,
-            },
-          };
+      const constraints: MediaStreamConstraints = {
+        video: options.video
+          ? {
+              deviceId: options.video.id
+                ? { exact: options.video.id }
+                : undefined,
+              width: options.video.width
+                ? { exact: options.video.width }
+                : undefined,
+              height: options.video.height
+                ? { exact: options.video.height }
+                : undefined,
+              frameRate: options.video.frameRate
+                ? { exact: options.video.frameRate }
+                : undefined,
+              facingMode: options.video.facingMode
+                ? { ideal: options.video.facingMode }
+                : undefined,
+            }
+          : false,
+        audio: options.audio
+          ? {
+              deviceId: options.audio.id
+                ? { exact: options.audio.id }
+                : undefined,
+              echoCancellation: options.audio.echoCancellation
+                ? { exact: options.audio.echoCancellation }
+                : undefined,
+              noiseSuppression: options.audio.noiseSuppression
+                ? { exact: options.audio.noiseSuppression }
+                : undefined,
+              autoGainControl: options.audio.autoGainControl
+                ? { exact: options.audio.autoGainControl }
+                : undefined,
+              sampleRate: options.audio.sampleRate
+                ? { exact: options.audio.sampleRate }
+                : undefined,
+              channelCount: options.audio.channelCount
+                ? { exact: options.audio.channelCount }
+                : undefined,
+              sampleSize: options.audio.sampleSize
+                ? { exact: options.audio.sampleSize }
+                : undefined,
+            }
+          : false,
+      };
       logger.debug("start constraints:", constraints);
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       logger.info("Stream Started");

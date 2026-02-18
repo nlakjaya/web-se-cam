@@ -13,7 +13,7 @@ import { ContinuousRecorder } from "./service/continuous-recorder";
 
 const logger = new Logger("App");
 export class App {
-  private uploader: Uploader;
+  private uploader?: Uploader;
   private storage: Storage;
   private deviceAccess: DeviceAccess;
   private videoPipeline: VideoPipeline;
@@ -31,8 +31,7 @@ export class App {
 
   private audioLevelListener: ((level: number) => void) | null;
 
-  constructor(options: { uploadUrl: string }) {
-    this.uploader = new Uploader(options.uploadUrl);
+  constructor(options?: { uploadUrl?: string }) {
     this.storage = new Storage();
     this.deviceAccess = new DeviceAccess();
     this.videoPipeline = new VideoPipeline();
@@ -50,8 +49,11 @@ export class App {
 
     this.audioLevelListener = null;
 
+    if (options?.uploadUrl) {
+      this.uploader = new Uploader(options.uploadUrl);
+      this.uploader.updateOptions({ fallbackStorage: this.storage });
+    }
     this.storage.init();
-    this.uploader.updateOptions({ fallbackStorage: this.storage });
     this.videoPipeline.addLayer(this.nightVision);
     this.videoPipeline.addLayer(this.motionDetector);
     this.videoPipeline.addLayer(this.videoOverlay);
@@ -87,7 +89,9 @@ export class App {
     this.noiseDetector.setMediaStream(this.mediaStream);
 
     const onSave = (filename: string, blob: Blob) =>
-      this.uploader.post(filename, blob);
+      this.uploader
+        ? this.uploader.post(filename, blob)
+        : this.storage.save(filename, blob);
     if (options.continuousRecording) {
       this.continuousMediaRecorder = this.createMediaRecorder(
         options.continuousRecording,
@@ -117,14 +121,16 @@ export class App {
           if (this.triggerTimeoutId) {
             clearTimeout(this.triggerTimeoutId);
           } else {
+            const triggerType =
+              instance instanceof MotionDetector
+                ? "motion"
+                : instance instanceof NoiseDetector
+                  ? "noise"
+                  : "trigger";
             this.triggerRecorder?.updateOptions({
-              fileNaming:
-                instance instanceof MotionDetector
-                  ? `%YYYY%MM%DD%hh%mm%ss-${options.deviceId}-motion%n`
-                  : instance instanceof NoiseDetector
-                    ? `%YYYY%MM%DD%hh%mm%ss-${options.deviceId}-noise%n`
-                    : `%YYYY%MM%DD%hh%mm%ss-${options.deviceId}-trigger%n`,
+              fileNaming: `%YYYY%MM%DD%hh%mm%ss-${options.deviceId}-${triggerType}%n`,
             });
+            logger.info("Recording:", triggerType);
             logger.debug("trigger recording started", this.triggerTimeoutId);
             this.continuousRecorder?.stop();
             if (this.triggerMediaRecorder) {

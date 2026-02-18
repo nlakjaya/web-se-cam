@@ -82,7 +82,12 @@ sw.addEventListener("activate", (event) => {
 
 sw.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || url.origin !== location.origin) return;
+  if (
+    event.request.method !== "GET" ||
+    url.origin !== location.origin ||
+    url.pathname.includes("/test/")
+  )
+    return;
   logger.debug("Intercepting fetch:", event.request.url);
   event.respondWith(cacheFirst(event));
 });

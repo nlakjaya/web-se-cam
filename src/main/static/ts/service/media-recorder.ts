@@ -51,6 +51,7 @@ class MediaRecorderWrapper {
         const handler = this.handlers[0];
         this.handlers.push(handler);
         this.handlers.shift();
+        handler.resolve = () => {};
         handler.nativeRecorder.stop();
         handler.nativeRecorder.start();
       } else {
@@ -93,7 +94,9 @@ class MediaRecorderWrapper {
     if (this.preRollIntervalId) {
       clearInterval(this.preRollIntervalId);
       while ((preRoll && this.handlers.length) || this.handlers.length > 1) {
-        this.handlers.pop()?.nativeRecorder.stop();
+        const handler = this.handlers.pop() as Handler;
+        handler.resolve = () => {};
+        handler.nativeRecorder.stop();
       }
     } else {
       preRollIntervalFunction();

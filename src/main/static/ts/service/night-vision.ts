@@ -7,13 +7,19 @@ type Options = {
   mixSubPixels?: boolean;
 };
 
+export const defaultOptions: Options = {
+  subPixelMultiplier: 1,
+  mixFrames: 1,
+  mixSubPixels: false,
+};
+
 const logger = new Logger("NightVision");
 export class NightVision implements VideoLayer {
   private options: Options;
   private framesBuffer: ImageData[];
 
   constructor() {
-    this.options = {};
+    this.options = defaultOptions;
     this.framesBuffer = [];
 
     logger.debug("instance created");

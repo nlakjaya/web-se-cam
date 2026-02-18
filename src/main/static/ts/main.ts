@@ -2,12 +2,23 @@ import { Logger, LoggerConfig, LoggerConfigReload } from "./util/logger";
 import { getDeviceId } from "./util/device-id";
 import { getParameter, setParameter } from "./util/parameter";
 import { App } from "./app";
+import { defaultOptions as defaultVideoOverlayOptions } from "./service/video-overlay";
+import { defaultOptions as defaultMotionDetectorOptions } from "./service/motion-detector";
+import { defaultOptions as defaultNoiseDetectorOptions } from "./service/noise-detector";
+import { defaultOptions as defaultNightVisionOptions } from "./service/night-vision";
+import { defaultOptions as defaultDeviceAccessOptions } from "./service/device-access";
+
+const MAX_LOG_LINES = 500;
 
 const logs = document.getElementById("logsPre") as HTMLPreElement;
 logs.textContent = "";
-LoggerConfig.subscribers.push(
-  (...messages: any[]) => (logs.textContent += messages.join(" ") + "\n"),
-);
+LoggerConfig.subscribers.push((...messages: any[]) => {
+  logs.textContent += messages.join(" ") + "\n";
+  const lines = logs.textContent.split("\n");
+  if (lines.length > MAX_LOG_LINES + 1) {
+    logs.textContent = lines.slice(-MAX_LOG_LINES - 1).join("\n");
+  }
+});
 const logger = new Logger("App");
 
 const elements: { [elementId: string]: HTMLElement } = {};
@@ -134,49 +145,63 @@ function initStaticElements() {
   initElement("installButton");
 }
 
+function getParameterOrSet<T>(key: string, t: T): T {
+  let param = getParameter(key);
+  if (!param) {
+    param = JSON.stringify(t);
+    setParameter(key, param);
+  }
+  return JSON.parse(param) as T;
+}
+
 function initApp() {
   initStaticElements();
 
-  let appOptions = getParameter("appOptions");
-  if (!appOptions) {
-    appOptions = JSON.stringify({
-      videoOverlay: { showStats: true, footerText: "WebSeCam © 2026" },
-    } as Parameters<App["updateOptions"]>[0]);
-    setParameter("appOptions", appOptions);
-  }
-  let activateOptions = getParameter("activateOptions");
-  if (!activateOptions) {
-    activateOptions = JSON.stringify({
-      continuousRecording: {
-        videoBitsPerSecond: 128000,
-        audioBitsPerSecond: 64000,
-        interval: 60000,
-      },
-      triggerRecording: {
-        videoBitsPerSecond: 512000,
-        audioBitsPerSecond: 64000,
-        preRollMs: 2000,
-        interval: 60000,
-        releaseMs: 3000,
-        triggers: ["MOTION", "NOISE"],
-      },
-    } as Omit<Parameters<App["activate"]>[0], "deviceId">);
-    setParameter("activateOptions", activateOptions);
-  }
-
-  const app = new App({
-    uploadUrl: "/upload",
+  let appOptions = getParameterOrSet<Parameters<App["updateOptions"]>[0]>(
+    "appOptions",
+    {
+      videoOverlay: { ...defaultVideoOverlayOptions, showStats: true },
+      motionDetector: defaultMotionDetectorOptions,
+      noiseDetector: defaultNoiseDetectorOptions,
+      nightVision: defaultNightVisionOptions,
+    },
+  );
+  let activateOptions = getParameterOrSet<
+    Omit<Parameters<App["activate"]>[0], "deviceId">
+  >("activateOptions", {
+    deviceAccess: defaultDeviceAccessOptions,
+    continuousRecording: {
+      videoBitsPerSecond: 128000,
+      audioBitsPerSecond: 64000,
+      interval: 60000,
+    },
+    triggerRecording: {
+      videoBitsPerSecond: 512000,
+      audioBitsPerSecond: 64000,
+      preRollMs: 2000,
+      interval: 60000,
+      releaseMs: 3000,
+      triggers: ["MOTION", "NOISE"],
+    },
   });
+
+  const app = new App();
   app.setAudioLevelListener(
     (level) => (elements.audioLevelDiv.style.width = (level * 100) / 255 + "%"),
   );
+  elements.audioThresholdDiv.style.width =
+    ((appOptions.noiseDetector?.detectionThreshold ??
+      defaultNoiseDetectorOptions.detectionThreshold) *
+      100) /
+      255 +
+    "%";
   const videoCanvas = app.getVideoCanvas();
   const motionCanvas = app.getMotionCanvas();
   elements.videoPreviewDiv.appendChild(videoCanvas);
   elements.videoPreviewDiv.appendChild(motionCanvas);
   motionCanvas.classList.add("motion");
 
-  app.updateOptions(JSON.parse(appOptions));
+  app.updateOptions(appOptions);
 
   let activated = false;
   initElement("activateButton", async (element) => {
@@ -191,7 +216,7 @@ function initApp() {
       logger.info("Activating...");
       await app.activate({
         deviceId: getDeviceId(),
-        ...JSON.parse(activateOptions),
+        ...activateOptions,
       });
       buttonElement.textContent = "Deactivate";
       activated = true;
