@@ -6,7 +6,7 @@ const logger = new Logger("script.js");
 
 async function registerServiceWorker() {
   try {
-    await navigator.serviceWorker.register("../service-worker.js", {
+    await navigator.serviceWorker.register("./service-worker.js", {
       type: "module",
     });
     logger.debug("Service Worker registered");
