@@ -5,22 +5,13 @@ type Options = {
   margin: number;
   showDateTime: boolean;
   showStats: boolean;
-  format: {
-    font: string;
-    fillStyle: string;
-    shadowColor: string;
-    shadowOffsetX: number;
-    shadowOffsetY: number;
-    shadowBlur: number;
-  };
+  format: Partial<
+    CanvasTextDrawingStyles & CanvasFillStrokeStyles & CanvasShadowStyles
+  >;
   footerText: string;
-  footerFormat: {
-    fillStyle: string;
-    shadowColor: string;
-    shadowOffsetX: number;
-    shadowOffsetY: number;
-    shadowBlur: number;
-  };
+  footerFormat: Partial<
+    CanvasTextDrawingStyles & CanvasFillStrokeStyles & CanvasShadowStyles
+  >;
 };
 
 export const defaultOptions: Options = {
@@ -70,7 +61,10 @@ export class VideoOverlay implements VideoLayer {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    Object.entries(this.options.format).forEach(([k, v]) => (ctx[k] = v));
+    ctx.textRendering = "optimizeSpeed";
+    Object.entries(this.options.format).forEach(
+      ([k, v]) => ((ctx as any)[k] = v),
+    );
     if (this.options.showDateTime) this.drawDateTime(ctx);
     if (this.options.showStats) this.drawStats(ctx);
     if (this.options.footerText) this.drawFooter(ctx);
@@ -122,7 +116,9 @@ export class VideoOverlay implements VideoLayer {
 
   drawFooter(ctx: CanvasRenderingContext2D) {
     ctx.save();
-    Object.entries(this.options.footerFormat).forEach(([k, v]) => (ctx[k] = v));
+    Object.entries(this.options.footerFormat).forEach(
+      ([k, v]) => ((ctx as any)[k] = v),
+    );
     this.drawText(
       ctx,
       this.options.footerText,
