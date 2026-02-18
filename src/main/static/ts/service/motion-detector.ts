@@ -104,7 +104,7 @@ export class MotionDetector implements VideoLayer {
       this.ctx.canvas.width,
       this.ctx.canvas.height,
     );
-    const ctxVisible = this.ctx.canvas.checkVisibility();
+    const ctxVisible = this.ctx.canvas.checkVisibility?.(); // TODO: polyfill this
     if (ctxVisible) {
       if (!this.options.previewMotionBlur) {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
