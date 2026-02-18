@@ -116,7 +116,9 @@ class MediaRecorderWrapper {
       clearInterval(this.preRollIntervalId);
       this.preRollIntervalId = undefined;
       while (this.handlers.length > 1) {
-        this.handlers.pop()?.nativeRecorder.stop();
+        const handler = this.handlers.pop() as Handler;
+        handler.resolve = () => {};
+        handler.nativeRecorder.stop();
       }
     }
 
