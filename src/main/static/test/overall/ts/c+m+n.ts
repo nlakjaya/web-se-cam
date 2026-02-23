@@ -88,7 +88,7 @@ async function happyPath() {
   });
   const spContinuous = new ContinuousRecorder();
   spContinuous.updateOptions({
-    fileNaming: "%YYYY%MM%DD%hh%mm%ss-trigger%n",
+    fileNaming: "%YYYY%MM%DD_%hh%mm%ss-trigger%n",
     interval: 10000,
     onSave: (filename: string, blob: Blob) => storage.save(filename, blob),
   });
@@ -104,10 +104,10 @@ async function happyPath() {
       spContinuous.updateOptions({
         fileNaming:
           instance instanceof MotionDetector
-            ? "%YYYY%MM%DD%hh%mm%ss-motion%n"
+            ? "%YYYY%MM%DD_%hh%mm%ss-motion%n"
             : instance instanceof NoiseDetector
-              ? "%YYYY%MM%DD%hh%mm%ss-noise%n"
-              : "%YYYY%MM%DD%hh%mm%ss-trigger%n",
+              ? "%YYYY%MM%DD_%hh%mm%ss-noise%n"
+              : "%YYYY%MM%DD_%hh%mm%ss-trigger%n",
       });
       console.log("trigger recording started", triggerTimeoutId);
       lpContinuous.stop();

@@ -170,3 +170,78 @@ export const ALL_BIT_RATES = [
     label: "Maximum quality (~ 40 MB/min)",
   },
 ];
+
+export const TRACK_CONTROLS = {
+  torch: { label: "Torch", type: "video", sample: true },
+  zoom: { label: "Zoom", type: "video", sample: { min: 0, max: 0, step: 0 } },
+  brightness: {
+    label: "Brightness",
+    type: "video",
+    sample: { max: 0, min: 0, step: 0 },
+  },
+  contrast: {
+    label: "Contrast",
+    type: "video",
+    sample: { max: 0, min: 0, step: 0 },
+  },
+  saturation: {
+    label: "Saturation",
+    type: "video",
+    sample: { max: 0, min: 0, step: 0 },
+  },
+  sharpness: {
+    label: "Sharpness",
+    type: "video",
+    sample: { max: 0, min: 0, step: 0 },
+  },
+  focusMode: {
+    label: "Focus Mode",
+    type: "video",
+    sample: ["continuous", "single-shot", "manual"],
+  },
+  focusDistance: {
+    label: "Focus Distance",
+    type: "video",
+    sample: { min: 0, max: 0, step: 0 },
+    dependsOn: { focusMode: "manual" },
+  },
+  exposureMode: {
+    label: "Exposure Mode",
+    type: "video",
+    sample: ["continuous", "manual"],
+  },
+  exposureCompensation: {
+    label: "Exposure Compensation",
+    type: "video",
+    sample: { min: 0, max: 0, step: 0 },
+    dependsOn: { exposureMode: "continuous" },
+  },
+  exposureTime: {
+    label: "Exposure Time",
+    type: "video",
+    sample: { min: 0, max: 0, step: 0 },
+    dependsOn: { exposureMode: "manual" },
+  },
+  iso: { label: "ISO", type: "video", sample: { min: 0, max: 0, step: 0 } },
+  whiteBalanceMode: {
+    label: "White Balance Mode",
+    type: "video",
+    sample: ["continuous", "manual"],
+  },
+  colorTemperature: {
+    label: "Color Temperature",
+    type: "video",
+    sample: { min: 0, max: 0, step: 0 },
+    dependsOn: { whiteBalanceMode: "manual" },
+  },
+  width: {
+    label: "Resolution (Width)",
+    type: "video",
+    sample: { max: 0, min: 0 },
+  },
+  height: {
+    label: "Resolution (Height)",
+    type: "video",
+    sample: { max: 0, min: 0 },
+  },
+} as const;

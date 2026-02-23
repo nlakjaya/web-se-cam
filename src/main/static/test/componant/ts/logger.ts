@@ -26,7 +26,7 @@ function happyPath() {
   logger.debug("debug");
   logger.timeEnd("time");
   if (app) {
-    app.textContent = "Test Completed" as string;
+    app.appendChild(document.createTextNode("Test Completed"));
   }
 }
 

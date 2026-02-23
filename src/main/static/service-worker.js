@@ -1,5 +1,3 @@
-import { Logger } from "./js/logger.js";
-
 const CACHE_KEY = "websecam-v0.1";
 const STATIC_ASSETS = [
   "",
@@ -21,7 +19,7 @@ const STATIC_ASSETS = [
 ];
 
 const sw = self; // as ServiceWorkerGlobalScope;
-const logger = new Logger("service-worker.js");
+const logger = { debug: console.log };
 
 async function cacheFirst(event) {
   const cached = await caches.match(event.request);

@@ -18,7 +18,7 @@ export class ContinuousRecorder {
   constructor() {
     this.options = {
       interval: 60000,
-      fileNaming: "%YYYY%MM%DD%hh%mm%ss-cr%n",
+      fileNaming: "%YYYY%MM%DD_%hh%mm%ss-cr%n",
       sequenceNoPadding: 5,
     };
 
@@ -58,7 +58,7 @@ export class ContinuousRecorder {
           String(sequenceNo).padStart(this.options.sequenceNoPadding ?? 0, "0"),
         )
         .replaceAll("%YYYY", String(now.getFullYear()))
-        .replaceAll("%MM", String(now.getMonth()).padStart(2, "0"))
+        .replaceAll("%MM", String(now.getMonth() + 1).padStart(2, "0"))
         .replaceAll("%DD", String(now.getDate()).padStart(2, "0"))
         .replaceAll("%hh", String(now.getHours()).padStart(2, "0"))
         .replaceAll("%mm", String(now.getMinutes()).padStart(2, "0"))

@@ -7,13 +7,13 @@ that has standalone Frontend and self hostable Backend
 ## Features
 
 - Total Privacy, Free and Open Source Forever
-- _TODO:_ Motion and Noise Alerts
-- _TODO:_ Pre-roll Recording on any Alert
-- _TODO:_ Loop Recording (Same or Different Quality)
+- _TODO:_ Alerts on Motion and Noise Events
+- Pre-roll Recording on any Event
+- Loop Recording (Same or Different Quality)
 - Standalone Frontend (Optional Backend)
 - _TODO:_ Live View (Requires Backend)
-- _TODO:_ Event Alerts (Low Battery, Goes Offline, Ambient Light Sensed etc.)
-- _TODO:_ End-to-end Encrypted
+- _TODO:_ Alerts on Low Battery, Offline, Ambient Light Sensed etc. Events
+- _TODO:_ End-to-end Encryption
 
 ## Frontend (Web Application)
 
@@ -104,6 +104,9 @@ that has standalone Frontend and self hostable Backend
     - Error Logs
     - Hit Counter
     - Performance Calculation
+  - Parameter (LocalStorage)
+    - Get Parameter
+    - Set Parameter
   - Constants
 
 ## Backend (Node Server)
@@ -122,13 +125,16 @@ that has standalone Frontend and self hostable Backend
 
 # Known Issues and Improvements
 
-- Browser Compatibility
-  - Browser storage permission issues with Chrome/Chromium
-  - Mobile browsers require user action (a tap on screen)
-  - Lack of Testing
-- Motion/Noise Detection algorithms runs on rendering pipeline
-  - _TODO:_ Utilize a WebWorker
-- Progressive Recording (almost there)
-- Progressive Uploading (_TODO:_ Improvement)
-- RnD and implement Sensor-based Events
-- RnD and implement Camera Flash On/Off
+- Improvement: PWA Manifest Screenshots
+- Improvement: Dim and Lock Screen
+- Improvement: Request Keep Awake (Based on Battery/Charging state)
+- Improvement: Camera Zoom
+- Improvement: Camera Focus Request
+- Improvement: Camera Flash On/Off
+- Improvement: Sensor-based Events (Battery, Accelerometer, Location, Gyroscope etc.)
+- Improvement: Utilize a WebWorker for Motion/Noise Detection (currently runs on rendering pipeline)
+- Improvement: Progressive Recording (almost there)
+- Improvement: Progressive Uploading
+- Improvement: Browser Compatibility
+- Issue: Low Camera FPS on older Devices
+- Issue: False Motion Events on Camera Auto-Focus

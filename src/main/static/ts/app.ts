@@ -31,7 +31,7 @@ export class App {
 
   private audioLevelListener: ((level: number) => void) | null;
 
-  constructor(options?: { uploadUrl?: string }) {
+  constructor() {
     this.storage = new Storage();
     this.deviceAccess = new DeviceAccess();
     this.videoPipeline = new VideoPipeline();
@@ -49,10 +49,6 @@ export class App {
 
     this.audioLevelListener = null;
 
-    if (options?.uploadUrl) {
-      this.uploader = new Uploader(options.uploadUrl);
-      this.uploader.updateOptions({ fallbackStorage: this.storage });
-    }
     this.storage.init();
     this.videoPipeline.addLayer(this.nightVision);
     this.videoPipeline.addLayer(this.motionDetector);
@@ -98,7 +94,7 @@ export class App {
       );
       this.continuousRecorder = new ContinuousRecorder();
       this.continuousRecorder.updateOptions({
-        fileNaming: `%YYYY%MM%DD%hh%mm%ss-${options.deviceId}-continuous%n`,
+        fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-continuous%n`,
         interval: options.continuousRecording.interval,
         onSave,
       });
@@ -111,7 +107,7 @@ export class App {
       );
       this.triggerRecorder = new ContinuousRecorder();
       this.triggerRecorder.updateOptions({
-        fileNaming: `%YYYY%MM%DD%hh%mm%ss-${options.deviceId}-trigger%n`,
+        fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-trigger%n`,
         interval: options.triggerRecording.interval,
         onSave,
       });
@@ -128,7 +124,7 @@ export class App {
                   ? "noise"
                   : "trigger";
             this.triggerRecorder?.updateOptions({
-              fileNaming: `%YYYY%MM%DD%hh%mm%ss-${options.deviceId}-${triggerType}%n`,
+              fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-${triggerType}%n`,
             });
             logger.info("Recording:", triggerType);
             logger.debug("trigger recording started", this.triggerTimeoutId);
@@ -203,6 +199,7 @@ export class App {
     nightVision?: Parameters<NightVision["updateOptions"]>[0];
     motionDetector?: Parameters<MotionDetector["updateOptions"]>[0];
     noiseDetector?: Parameters<NoiseDetector["updateOptions"]>[0];
+    uploadUrl?: string;
   }) {
     if (options.videoOverlay)
       this.videoOverlay.updateOptions(options.videoOverlay);
@@ -212,6 +209,12 @@ export class App {
       this.motionDetector.updateOptions(options.motionDetector);
     if (options.noiseDetector)
       this.noiseDetector.updateOptions(options.noiseDetector);
+    if (options.uploadUrl) {
+      this.uploader = new Uploader(options.uploadUrl);
+      this.uploader.updateOptions({ fallbackStorage: this.storage });
+    } else {
+      this.uploader = undefined;
+    }
   }
 
   private createMediaRecorder(

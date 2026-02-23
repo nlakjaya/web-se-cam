@@ -8,6 +8,15 @@ import { defaultOptions as defaultNoiseDetectorOptions } from "./service/noise-d
 import { defaultOptions as defaultNightVisionOptions } from "./service/night-vision";
 import { defaultOptions as defaultDeviceAccessOptions } from "./service/device-access";
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
 const MAX_LOG_LINES = 500;
 
 const logs = document.getElementById("logsPre") as HTMLPreElement;
@@ -143,6 +152,13 @@ function initStaticElements() {
     "true",
   );
   initElement("installButton");
+
+  if ("beforeInstallPromptEvent" in window) {
+    setupAppInstall((window as any).beforeInstallPromptEvent);
+    window.addEventListener("beforeinstallprompt", (event) =>
+      setupAppInstall(event as BeforeInstallPromptEvent),
+    );
+  }
 }
 
 function getParameterOrSet<T>(key: string, t: T): T {
@@ -200,6 +216,11 @@ function initApp() {
   elements.videoPreviewDiv.appendChild(videoCanvas);
   elements.videoPreviewDiv.appendChild(motionCanvas);
   motionCanvas.classList.add("motion");
+  if (motionCanvas.checkVisibility === undefined) {
+    // polyfill
+    motionCanvas.checkVisibility = () =>
+      (elements.showMotionInput as HTMLInputElement).checked;
+  }
 
   app.updateOptions(appOptions);
 
@@ -251,17 +272,6 @@ function initApp() {
   logger.info("initialized");
 }
 
-initApp();
-
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: Array<string>;
-  readonly userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
-
 function setupAppInstall(event: BeforeInstallPromptEvent) {
   logger.debug("not installed yet");
   elements.installButton.style.display = "inline-block";
@@ -275,9 +285,4 @@ function setupAppInstall(event: BeforeInstallPromptEvent) {
   });
 }
 
-if ("beforeInstallPromptEvent" in window) {
-  setupAppInstall((window as any).beforeInstallPromptEvent);
-  window.addEventListener("beforeinstallprompt", (event) =>
-    setupAppInstall(event as BeforeInstallPromptEvent),
-  );
-}
+initApp();

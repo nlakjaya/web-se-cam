@@ -21,7 +21,7 @@ async function happyPath() {
   console.log("List", await storage.list());
 
   if (app) {
-    app.textContent = "Test Completed" as string;
+    app.appendChild(document.createTextNode("Test Completed"));
   }
 }
 

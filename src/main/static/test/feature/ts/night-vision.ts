@@ -70,7 +70,7 @@ async function happyPath() {
       devices.stop();
       if (app) {
         app.removeChild(video.getCanvasElement());
-        app.textContent = "Test Completed" as string;
+        app.appendChild(document.createTextNode("Test Completed"));
       }
     }
     logger.debug("cycle options: ", JSON.stringify(optionsCycle[idx]));

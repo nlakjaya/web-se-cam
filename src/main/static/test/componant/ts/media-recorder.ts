@@ -50,7 +50,7 @@ async function happyPath() {
   devices.stop();
   if (app) {
     app.removeChild(videoElement);
-    app.textContent = "Test Completed" as string;
+    app.appendChild(document.createTextNode("Test Completed"));
   }
 }
 
