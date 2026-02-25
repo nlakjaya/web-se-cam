@@ -81,6 +81,12 @@ export class App {
     };
   }) {
     this.mediaStream = await this.deviceAccess.start(options.deviceAccess);
+    const videoTrack = this.mediaStream.getVideoTracks()[0];
+    const audioTrack = this.mediaStream.getAudioTracks()[0];
+
+    (window as any).videoTrack = videoTrack;
+    (window as any).audioTrack = audioTrack;
+
     this.videoPipeline.setMediaStream(this.mediaStream);
     this.noiseDetector.setMediaStream(this.mediaStream);
 

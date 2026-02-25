@@ -26,9 +26,7 @@ type Options = {
 
 export const defaultOptions: Options = {
   video: {
-    width: 640,
     height: 480,
-    frameRate: 15,
     facingMode: "user",
   },
   audio: {

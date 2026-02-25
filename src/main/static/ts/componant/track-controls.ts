@@ -1,7 +1,7 @@
 import { TRACK_CONTROLS } from "../util/constants";
 import { Logger } from "../util/logger";
 
-export type Capabilities = Partial<{
+type Capabilities = Partial<{
   [K in keyof typeof TRACK_CONTROLS]: (typeof TRACK_CONTROLS)[K]["sample"];
 }>;
 
@@ -13,7 +13,7 @@ type SettingValue<T> = T extends boolean
       ? number
       : never;
 
-export type Settings = Partial<{
+type Settings = Partial<{
   [K in keyof Capabilities]: SettingValue<Capabilities[K]>;
 }>;
 
@@ -21,32 +21,28 @@ const logger = new Logger("TrackControls");
 export class TrackControls {
   private capabilities: Capabilities;
   private settings: Settings;
-  private applyConstraints?: (settings: Settings) => Promise<Settings>;
+  private applyConstraints?: (
+    constrains: MediaTrackConstraints,
+  ) => Promise<MediaTrackSettings>;
 
   private controls: Partial<
     Record<keyof Capabilities, HTMLInputElement | HTMLSelectElement>
   > = {};
 
-  constructor(capabilities: Capabilities, settings: Settings) {
-    this.capabilities = capabilities;
-    this.settings = settings;
+  constructor(
+    capabilities: MediaTrackCapabilities,
+    settings: MediaTrackSettings,
+  ) {
+    this.capabilities = capabilities as Capabilities;
+    this.settings = settings as Settings;
 
     logger.debug("instance created");
   }
 
-  private resizeCanvas(mediaStream: MediaStream) {
-    logger.debug("resizeCanvas called:", mediaStream);
-    const settings = mediaStream.getVideoTracks()[0].getSettings();
-    const width = settings.width as number;
-    const height = settings.height as number;
-
-    this.ctx.canvas.width = width;
-    this.ctx.canvas.height = height;
-    this.layers.forEach((layer) => layer.resize?.(width, height));
-  }
-
   setApplyConstraintsListener(
-    listener?: (settings: Settings) => Promise<Settings>,
+    listener?: (
+      constrains: MediaTrackConstraints,
+    ) => Promise<MediaTrackSettings>,
   ) {
     logger.debug("setApplyConstraintsListener called");
     this.applyConstraints = listener;
@@ -91,9 +87,9 @@ export class TrackControls {
 
     control.disabled = true;
     try {
-      const updated = await this.applyConstraints({
-        [capability]: value,
-      } as Settings);
+      const updated = (await this.applyConstraints({
+        advanced: [{ ...this.settings, [capability]: value } as any],
+      })) as Settings;
       if (updated) this.updateSettings(updated);
     } catch (err) {
       logger.error("applyConstraints failed:", err);
@@ -137,7 +133,7 @@ export class TrackControls {
       input.checked = !!this.settings[capability];
       input.onchange = () => this.handleChange(capability, input.checked);
       this.controls[capability] = input;
-      div.append(input, label);
+      div.append(label, input);
     } else if (Array.isArray(capValue)) {
       const select = document.createElement("select");
       capValue.forEach((opt) => {
@@ -166,7 +162,10 @@ export class TrackControls {
       input.type = "range";
       input.min = String(capValue.min);
       input.max = String(capValue.max);
-      input.step = "step" in capValue ? String(capValue.step ?? 1) : "1";
+      input.step =
+        "step" in capValue
+          ? String(capValue.step ?? 1)
+          : String((capValue.max - capValue.min) / 100);
       const initialValue =
         (this.settings[capability] as number | undefined) ?? capValue.min;
       input.value = String(initialValue);

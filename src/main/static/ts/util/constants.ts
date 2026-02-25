@@ -244,4 +244,39 @@ export const TRACK_CONTROLS = {
     type: "video",
     sample: { max: 0, min: 0 },
   },
+  frameRate: {
+    label: "Frame Rate",
+    type: "video",
+    sample: { max: 0, min: 0 },
+  },
+  resizeMode: {
+    label: "resizeMode",
+    type: "video",
+    sample: ["none", "crop-and-scale"],
+  },
+  autoGainControl: {
+    label: "Auto Gain Control",
+    type: "audio",
+    sample: [true, false],
+  },
+  echoCancellation: {
+    label: "Echo Cancellation",
+    type: "audio",
+    sample: [true, false, "all"],
+  },
+  latency: {
+    label: "Latency",
+    type: "audio",
+    sample: { max: 0, min: 0 },
+  },
+  noiseSuppression: {
+    label: "Noise Suppression",
+    type: "audio",
+    sample: [true, false],
+  },
+  voiceIsolation: {
+    label: "Voice Isolation",
+    type: "audio",
+    sample: [true, false],
+  },
 } as const;
