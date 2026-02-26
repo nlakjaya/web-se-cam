@@ -2,10 +2,14 @@ import { Request } from "express";
 import url from "url";
 import { WebSocket } from "ws";
 
+const SIGNALLING_MAX_CLIENTS_COUNT = process.env.SIGNALLING_MAX_CLIENTS_COUNT
+  ? parseInt(process.env.SIGNALLING_MAX_CLIENTS_COUNT)
+  : 16;
+
 const clients = new Map<string, WebSocket>();
 
-export function getHandlerSubscribe(maxClientsCount: number) {
-  console.log(`Max no of clients: ${maxClientsCount}`);
+export function getHandlerSubscribe() {
+  console.log(`Max no of clients: ${SIGNALLING_MAX_CLIENTS_COUNT}`);
   return (ws: WebSocket, req: Request) => {
     const urlObj = url.parse(req.url || "", true);
     const clientId = urlObj.query.id as string;
@@ -20,11 +24,12 @@ export function getHandlerSubscribe(maxClientsCount: number) {
 
     if (clients.has(clientId)) {
       console.error("ws client already exist and overriding:", clientId);
-    } else if (clients.size == maxClientsCount) {
+      clients.get(clientId)?.close();
+    } else if (clients.size == SIGNALLING_MAX_CLIENTS_COUNT) {
       console.error(
         "ws subscribe:",
         "clients count exceeded:",
-        maxClientsCount,
+        SIGNALLING_MAX_CLIENTS_COUNT,
       );
       ws.send(
         JSON.stringify({

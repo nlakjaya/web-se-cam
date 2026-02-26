@@ -90,12 +90,20 @@ that has standalone Frontend and self hostable Backend
     - Set URL
     - _TODO:_ No of Retries
     - Fallback to Storage
-  - Alerting
-    - _TODO_
-  - Telemetry
-    - _TODO_
-  - Heartbeat
-    - _TODO_
+  - Stats (Heartbeat/Telemetry/Alerting)
+    - Device ID
+    - Timestamp
+    - Frame Count
+    - _TODO:_ Events
+    - Battery
+      - Level
+      - Charging State
+      - ETA (Charging or Discharging)
+    - Geo Location
+      - Timestamp
+      - Latitude
+      - Longitude
+      - Altitude
 - Utils
   - Logger
     - Debug Logs
@@ -138,3 +146,4 @@ that has standalone Frontend and self hostable Backend
 - Improvement: Browser Compatibility
 - Issue: Low Camera FPS on older Devices
 - Issue: False Motion Events on Camera Auto-Focus
+- Issue: https://yusitnikov.github.io/fix-webm-duration/

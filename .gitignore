@@ -1,5 +1,6 @@
-# local cache directories
-/upload
+# local data directories
+/local
+/data
 
 # package directories
 /node_modules

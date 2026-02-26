@@ -45,7 +45,7 @@ export class Uploader {
               `HTTP POST: ${response.status} ${response.statusText}`,
             );
           }
-          logger.info("Upload success:", filename, await response.text());
+          logger.debug("post success:", filename, await response.text());
           break;
         default:
           throw new Error("Unsupported mode:", this.options.mode);

@@ -21,7 +21,7 @@ async function happyPath() {
   setTimeout(() => {
     const a = p2pA;
     const b = p2pB;
-    debugger;
+    debugger; // TODO
   }, 5000);
 }
 

@@ -2,8 +2,12 @@ import { Request, Response } from "express";
 import * as fs from "fs";
 import path from "path";
 
-const MAX_FILE_SIZE = process.env.MAX_FILE_SIZE
-  ? parseInt(process.env.MAX_FILE_SIZE)
+const UPLOAD_PATH = process.env.UPLOAD_PATH || "./data/upload";
+const UPLOAD_STORAGE_QUOTA = process.env.UPLOAD_STORAGE_QUOTA
+  ? parseInt(process.env.UPLOAD_STORAGE_QUOTA)
+  : 512 * 1024 * 1024; // Default is 512MB
+const UPLOAD_MAX_FILE_SIZE = process.env.UPLOAD_MAX_FILE_SIZE
+  ? parseInt(process.env.UPLOAD_MAX_FILE_SIZE)
   : 32 * 1024 * 1024; // default is 32MB
 const UPLOAD_TIMEOUT = process.env.UPLOAD_TIMEOUT
   ? parseInt(process.env.UPLOAD_TIMEOUT)
@@ -77,10 +81,14 @@ async function freeStorageSpace(
   }
 }
 
-export function getHandlerUpload(uploadPath: string, storageQuota: number) {
-  console.log(`Uploads will be saved in: ${uploadPath}`);
-  console.log(`Storage quota: ${Math.round(storageQuota / 1024 / 1024)} MB`);
-  console.log(`Max file size: ${Math.round(MAX_FILE_SIZE / 1024 / 1024)} MB`);
+export function getHandlerUpload() {
+  console.log(`Uploads will be saved in: ${UPLOAD_PATH}`);
+  console.log(
+    `Storage quota: ${Math.round(UPLOAD_STORAGE_QUOTA / 1024 / 1024)} MB`,
+  );
+  console.log(
+    `Max file size: ${Math.round(UPLOAD_MAX_FILE_SIZE / 1024 / 1024)} MB`,
+  );
   console.log(`Upload timeout: ${Math.round(UPLOAD_TIMEOUT / 1000)} s`);
   return async (req: Request, res: Response) => {
     const contentLength = parseInt(
@@ -101,10 +109,10 @@ export function getHandlerUpload(uploadPath: string, storageQuota: number) {
       });
       return;
     }
-    if (contentLength > MAX_FILE_SIZE) {
+    if (contentLength > UPLOAD_MAX_FILE_SIZE) {
       res.status(411).json({
         error: "Length Exceeded",
-        message: `Max Length is ${MAX_FILE_SIZE / 1024 / 1024} MB`,
+        message: `Max Length is ${UPLOAD_MAX_FILE_SIZE / 1024 / 1024} MB`,
       });
       return;
     }
@@ -117,8 +125,8 @@ export function getHandlerUpload(uploadPath: string, storageQuota: number) {
     }
 
     const sanitizedFilename = sanitizeFilename(fileName);
-    const partFilePath = path.join(uploadPath, `${sanitizedFilename}.part`);
-    const finalFilePath = path.join(uploadPath, sanitizedFilename);
+    const partFilePath = path.join(UPLOAD_PATH, `${sanitizedFilename}.part`);
+    const finalFilePath = path.join(UPLOAD_PATH, sanitizedFilename);
     if (fs.existsSync(finalFilePath)) {
       res.status(409).json({
         error: "Conflict",
@@ -127,13 +135,16 @@ export function getHandlerUpload(uploadPath: string, storageQuota: number) {
       return;
     }
 
-    await fs.promises.mkdir(uploadPath, { recursive: true });
-    const currentStorageUsed = await getStorageUsed(uploadPath);
+    await fs.promises.mkdir(UPLOAD_PATH, { recursive: true });
+    const currentStorageUsed = await getStorageUsed(UPLOAD_PATH);
     const projectedStorage = currentStorageUsed + contentLength;
-    const spaceNeeded = projectedStorage - storageQuota;
+    const spaceNeeded = projectedStorage - UPLOAD_STORAGE_QUOTA;
     if (spaceNeeded > 0) {
-      const freedSpace = await freeStorageSpace(uploadPath, spaceNeeded);
-      if (currentStorageUsed - freedSpace + contentLength > storageQuota) {
+      const freedSpace = await freeStorageSpace(UPLOAD_PATH, spaceNeeded);
+      if (
+        currentStorageUsed - freedSpace + contentLength >
+        UPLOAD_STORAGE_QUOTA
+      ) {
         res.status(507).json({
           error: "Insufficient Storage",
           message: `Storage quota exceeded. Need ${spaceNeeded} more bytes`,

@@ -4,7 +4,6 @@
   "description": "A web based security camera applicaton",
   "start_url": ".",
   "display": "standalone",
-  "display_override": ["fullscreen", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#0d6efd",
   "orientation": "any",
