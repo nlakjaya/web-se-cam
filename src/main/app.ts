@@ -1,7 +1,12 @@
+#!/bin/npx ts-node
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import expressWs from "express-ws";
 import path from "path";
+
+dotenv.config();
+
 import { getHandlerStats } from "./handler/stats";
 import { getHandlerUpload } from "./handler/upload";
 import { getHandlerSubscribe } from "./handler/signaling";
