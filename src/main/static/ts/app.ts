@@ -28,6 +28,7 @@ type StatsData = {
 type StatsConfig = {
   url?: string;
   interval?: number;
+  sendStats?: () => Promise<void>;
   timeoutId?: any;
 };
 
@@ -241,50 +242,57 @@ export class App {
     levelIndicatorAnimator();
 
     if (this.statsConfig.url && this.statsConfig.interval) {
-      const stats: StatsData = {
-        deviceId: options.deviceId,
-      };
-      const { url, interval } = this.statsConfig;
-      const sendStats = async () => {
-        logger.debug("send stats:", stats);
-        if (this.statsConfig.timeoutId) {
-          clearTimeout(this.statsConfig.timeoutId);
+      if (!this.statsConfig.sendStats) {
+        const stats: StatsData = {
+          deviceId: options.deviceId,
+        };
+        const { url, interval } = this.statsConfig;
+        this.statsConfig.sendStats = async () => {
+          logger.debug("send stats:", stats);
+          if (this.statsConfig.timeoutId) {
+            clearTimeout(this.statsConfig.timeoutId);
+          }
+          this.statsConfig.timeoutId = setTimeout(
+            this.statsConfig.sendStats as () => Promise<void>,
+            interval,
+          );
+          stats.deviceTimestamp = Date.now();
+          stats.frameCount = this.frameCounter.getFrameCount();
+          fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(stats),
+          }).catch((error) => {
+            logger.error("send stats failed:", error);
+          });
+        };
+        if (await this.sensor.isSupported("Battery")) {
+          this.sensor.setBatteryListener((batteryInfo) => {
+            if (batteryInfo.level !== undefined)
+              stats.batteryLevel = batteryInfo.level;
+            if (batteryInfo.charging !== undefined)
+              stats.batteryCharging = batteryInfo.charging;
+            stats.batteryEta = batteryInfo.eta;
+            if (this.statsConfig.timeoutId)
+              (this.statsConfig.sendStats as () => Promise<void>)();
+          });
         }
-        this.statsConfig.timeoutId = setTimeout(sendStats, interval);
-        stats.deviceTimestamp = Date.now();
-        stats.frameCount = this.frameCounter.getFrameCount();
-        fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(stats),
-        }).catch((error) => {
-          logger.error("send stats failed:", error);
-        });
-      };
-      if (await this.sensor.isSupported("Battery")) {
-        this.sensor.setBatteryListener((batteryInfo) => {
-          if (batteryInfo.level !== undefined)
-            stats.batteryLevel = batteryInfo.level;
-          if (batteryInfo.charging !== undefined)
-            stats.batteryCharging = batteryInfo.charging;
-          stats.batteryEta = batteryInfo.eta;
-          if (this.statsConfig.timeoutId) sendStats();
-        });
-      }
-      if (await this.sensor.isSupported("Geolocation")) {
-        this.sensor.setGeolocationListener((geolocation) => {
-          stats.locationTimestamp = geolocation.timestamp;
-          stats.latitude = geolocation.latitude;
-          stats.longitude = geolocation.longitude;
-          if (geolocation.altitude !== null)
-            stats.altitude = geolocation.altitude;
-          if (this.statsConfig.timeoutId) sendStats();
-        });
+        if (await this.sensor.isSupported("Geolocation")) {
+          this.sensor.setGeolocationListener((geolocation) => {
+            stats.locationTimestamp = geolocation.timestamp;
+            stats.latitude = geolocation.latitude;
+            stats.longitude = geolocation.longitude;
+            if (geolocation.altitude !== null)
+              stats.altitude = geolocation.altitude;
+            if (this.statsConfig.timeoutId)
+              (this.statsConfig.sendStats as () => Promise<void>)();
+          });
+        }
       }
       this.frameCounter.resetFrameCount();
-      sendStats();
+      this.statsConfig.sendStats();
     }
   }
 

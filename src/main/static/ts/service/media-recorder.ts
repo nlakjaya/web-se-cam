@@ -16,17 +16,17 @@ type Handler = {
 const logger = new Logger("MediaRecorder");
 class MediaRecorderWrapper {
   private options: Options;
-  private mixedStream: MediaStream;
+  private mediaStream: MediaStream;
   private timeSlice?: number;
   private preRollIntervalId?: any;
   private handlers: Handler[];
 
   constructor(options: Options, ...tracks: MediaStreamTrack[]) {
     this.options = options;
-    this.mixedStream = new MediaStream();
+    this.mediaStream = new MediaStream();
     this.handlers = [];
 
-    tracks.forEach((track) => this.mixedStream.addTrack(track));
+    tracks.forEach((track) => this.mediaStream.addTrack(track));
 
     logger.debug("instance created");
   }
@@ -56,9 +56,9 @@ class MediaRecorderWrapper {
         handler.nativeRecorder.start();
       } else {
         const handler: Handler = {
-          nativeRecorder: new MediaRecorder(this.mixedStream, {
-            mimeType: this.options?.mimeType,
-            audioBitsPerSecond: this.options?.audioBitsPerSecond,
+          nativeRecorder: new MediaRecorder(this.mediaStream, {
+            mimeType: this.options.mimeType ?? "video/webm",
+            audioBitsPerSecond: this.options.audioBitsPerSecond,
             videoBitsPerSecond: this.options.videoBitsPerSecond,
           }),
           blobs: [],
