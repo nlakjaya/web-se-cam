@@ -263,22 +263,26 @@ export class App {
           logger.error("send stats failed:", error);
         });
       };
-      this.sensor.setBatteryListener((batteryInfo) => {
-        if (batteryInfo.level !== undefined)
-          stats.batteryLevel = batteryInfo.level;
-        if (batteryInfo.charging !== undefined)
-          stats.batteryCharging = batteryInfo.charging;
-        stats.batteryEta = batteryInfo.eta;
-        if (this.statsConfig.timeoutId) sendStats();
-      });
-      this.sensor.setGeolocationListener((geolocation) => {
-        stats.locationTimestamp = geolocation.timestamp;
-        stats.latitude = geolocation.latitude;
-        stats.longitude = geolocation.longitude;
-        if (geolocation.altitude !== null)
-          stats.altitude = geolocation.altitude;
-        if (this.statsConfig.timeoutId) sendStats();
-      });
+      if (await this.sensor.isSupported("Battery")) {
+        this.sensor.setBatteryListener((batteryInfo) => {
+          if (batteryInfo.level !== undefined)
+            stats.batteryLevel = batteryInfo.level;
+          if (batteryInfo.charging !== undefined)
+            stats.batteryCharging = batteryInfo.charging;
+          stats.batteryEta = batteryInfo.eta;
+          if (this.statsConfig.timeoutId) sendStats();
+        });
+      }
+      if (await this.sensor.isSupported("Geolocation")) {
+        this.sensor.setGeolocationListener((geolocation) => {
+          stats.locationTimestamp = geolocation.timestamp;
+          stats.latitude = geolocation.latitude;
+          stats.longitude = geolocation.longitude;
+          if (geolocation.altitude !== null)
+            stats.altitude = geolocation.altitude;
+          if (this.statsConfig.timeoutId) sendStats();
+        });
+      }
       this.frameCounter.resetFrameCount();
       sendStats();
     }

@@ -90,3 +90,46 @@ section {
   overflow-y: auto;
   margin-bottom: 0;
 }
+
+#screenLockDiv {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#screenLockDiv > div {
+  width: 80vw;
+  max-width: 320px;
+}
+
+#screenLockDiv > div > div {
+  position: relative;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+}
+
+#screenLockDiv > div > div > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: bold;
+  letter-spacing: 1px;
+  pointer-events: none;
+  user-select: none;
+}
+
+#screenLockThumbDiv {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  cursor: grab;
+}

@@ -6,16 +6,6 @@ const STATIC_ASSETS = [
   "icon/512.png",
   "css/style.css",
   "js/script.js",
-  "css/bootstrap.css",
-  "js/klesun/ts-browser/src/actions/ParseTsModule_sideEffects.js",
-  "js/klesun/ts-browser/src/sideEffectModules/sideEffectUtils.js",
-  "js/klesun/ts-browser/src/TranspileWorker.js",
-  "js/klesun/ts-browser/src/ts-browser.js",
-  "js/klesun/ts-browser/src/UrlPathResolver_sideEffects.js",
-  "js/klesun/ts-browser/src/UrlPathResolver.js",
-  "js/klesun/ts-browser/src/utils.js",
-  "js/klesun/ts-browser/src/WorkerManager.js",
-  "js/typescriptservices-min-js-builds/v5.4.5/typescript.js",
 ];
 
 const sw = self; // as ServiceWorkerGlobalScope;

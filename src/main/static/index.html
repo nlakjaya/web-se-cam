@@ -80,6 +80,9 @@
         <button id="installButton" disabled class="btn btn-primary">
           Install App
         </button>
+        <button id="screenLockButton" disabled class="btn btn-danger">
+          Lock Screen
+        </button>
       </div>
     </header>
 
@@ -96,6 +99,15 @@
         <a href="https://github.com/nlakjaya/web-se-cam">GitHub</a></small
       >
     </footer>
+
+    <div id="screenLockDiv" style="display: none">
+      <div>
+        <div>
+          <span>Swipe to Unlock &gt;&gt;</span>
+          <div id="screenLockThumbDiv"></div>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="js/script.js"></script>
   </body>

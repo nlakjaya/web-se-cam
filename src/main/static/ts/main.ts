@@ -152,6 +152,45 @@ function initStaticElements() {
     "true",
   );
   initElement("installButton");
+  initElement("screenLockButton", () => lockScreen());
+  initElement("screenLockDiv");
+  initElement("screenLockThumbDiv");
+
+  const screenLockStates = {
+    isDragging: false,
+    startX: 0,
+    currentX: 0,
+  };
+  elements.screenLockThumbDiv.addEventListener("pointerdown", (event) => {
+    screenLockStates.isDragging = true;
+    screenLockStates.startX = event.clientX;
+    elements.screenLockThumbDiv.setPointerCapture(event.pointerId);
+  });
+  elements.screenLockThumbDiv.addEventListener("pointermove", (event) => {
+    if (!screenLockStates.isDragging) return;
+    const dX = event.clientX - screenLockStates.startX;
+    const dOffset =
+      (elements.screenLockThumbDiv.parentElement as HTMLElement).offsetWidth -
+      elements.screenLockThumbDiv.offsetWidth;
+    screenLockStates.currentX = Math.max(0, Math.min(dX, dOffset));
+    elements.screenLockThumbDiv.style.transform = `translateX(${screenLockStates.currentX}px)`;
+  });
+  elements.screenLockThumbDiv.addEventListener("pointerup", () => {
+    screenLockStates.isDragging = false;
+    const dOffset =
+      (elements.screenLockThumbDiv.parentElement as HTMLElement).offsetWidth -
+      elements.screenLockThumbDiv.offsetWidth;
+    if (screenLockStates.currentX >= dOffset * 0.95) {
+      unlockScreen();
+    } else {
+      const animationMs = 300;
+      elements.screenLockThumbDiv.style.transition = `transform ${animationMs}ms ease`;
+      setTimeout(() => {
+        elements.screenLockThumbDiv.style.transition = "";
+      }, animationMs);
+    }
+    elements.screenLockThumbDiv.style.transform = "translateX(0)";
+  });
 
   if ("beforeInstallPromptEvent" in window) {
     setupAppInstall((window as any).beforeInstallPromptEvent);
@@ -159,6 +198,20 @@ function initStaticElements() {
       setupAppInstall(event as BeforeInstallPromptEvent),
     );
   }
+}
+
+function lockScreen() {
+  elements.screenLockDiv.style.display = "flex";
+  elements.screenLockDiv.style.opacity = "1";
+}
+
+function unlockScreen() {
+  const animationMs = 400;
+  setTimeout(() => {
+    elements.screenLockDiv.style.display = "none";
+  }, animationMs);
+  elements.screenLockDiv.style.transition = `opacity ${animationMs}ms ease`;
+  elements.screenLockDiv.style.opacity = "0";
 }
 
 function getParameterOrSet<T>(key: string, t: T): T {
