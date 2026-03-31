@@ -44,8 +44,8 @@ async function happyPath() {
     return audioTrack.getSettings();
   });
 
-  (window as any).videoTrack = videoTrack;
-  (window as any).audioTrack = audioTrack;
+  (window as any).videoTrack = videoTrack; // for debugging
+  (window as any).audioTrack = audioTrack; // for debugging
 
   if (app) {
     app.append(

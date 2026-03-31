@@ -88,7 +88,7 @@ export class TrackControls {
     control.disabled = true;
     try {
       const updated = (await this.applyConstraints({
-        advanced: [{ ...this.settings, [capability]: value } as any],
+        advanced: [{ ...this.settings, [capability]: value } as any], // TODO: group constrains and apply the group
       })) as Settings;
       if (updated) this.updateSettings(updated);
     } catch (err) {

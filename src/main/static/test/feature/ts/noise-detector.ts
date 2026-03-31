@@ -42,7 +42,10 @@ async function happyPath() {
       noiseSuppression: false,
     },
   });
-  const mediaStream = await devices.start();
+  const mediaStream = await devices.start({
+    video: { facingMode: "environment" },
+    audio: {},
+  });
   noise.setMediaStream(mediaStream);
 
   thresholdStyle.width = (20 * 100) / 255 + "%";

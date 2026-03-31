@@ -13,7 +13,10 @@ async function happyPath() {
   const devices = new DeviceAccess();
   const storage = new Storage();
 
-  const mediaStream = await devices.start();
+  const mediaStream = await devices.start({
+    video: { facingMode: "environment" },
+    audio: {},
+  });
   videoElement.srcObject = mediaStream;
   videoElement.muted = true;
   videoElement.play();

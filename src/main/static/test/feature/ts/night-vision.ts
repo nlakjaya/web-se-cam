@@ -60,7 +60,10 @@ async function happyPath() {
     app.appendChild(video.getCanvasElement());
   }
 
-  const mediaStream = await devices.start();
+  const mediaStream = await devices.start({
+    video: { facingMode: "environment" },
+    audio: {},
+  });
   video.setMediaStream(mediaStream);
 
   let idx = 0;

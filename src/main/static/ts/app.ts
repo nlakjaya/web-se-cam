@@ -141,8 +141,8 @@ export class App {
     const videoTrack = this.mediaStream.getVideoTracks()[0];
     const audioTrack = this.mediaStream.getAudioTracks()[0];
 
-    (window as any).videoTrack = videoTrack;
-    (window as any).audioTrack = audioTrack;
+    (window as any).videoTrack = videoTrack; // for debugging
+    (window as any).audioTrack = audioTrack; // for debugging
 
     this.videoPipeline.setMediaStream(this.mediaStream);
     this.noiseDetector.setMediaStream(this.mediaStream);

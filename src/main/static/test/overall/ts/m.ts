@@ -27,7 +27,10 @@ async function happyPath() {
   video.addLayer(overlay);
   overlay.updateOptions({ showStats: true });
 
-  const mediaStream = await devices.start();
+  const mediaStream = await devices.start({
+    video: { facingMode: "environment" },
+    audio: {},
+  });
   video.setMediaStream(mediaStream);
 
   if (app) {

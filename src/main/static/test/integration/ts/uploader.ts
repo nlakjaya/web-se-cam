@@ -22,16 +22,25 @@ async function happyPath() {
     `testFile-${Date.now()}`,
     new Blob(["test2"], { type: "video/plain" }),
   );
-  console.log("List", await storage.list());
+  // console.log("List", await storage.list());
 
+  // TODO: mode: "multipart/form-data
   // uploader.updateOptions({ mode: "multipart/form-data" });
   // await uploader.post(`testFile-${Date.now()}`, new Blob(["test3"], { type: "video/plain" }));
-  // console.log("List", await storage.list());
+
+  const storageList = await storage.list();
+  console.log("List", storageList);
 
   await storage.clear();
 
   if (app) {
-    app.appendChild(document.createTextNode("Test Completed"));
+    if (storageList.length) {
+      app.appendChild(
+        document.createTextNode("Test Failed (check backend logs)"),
+      );
+    } else {
+      app.appendChild(document.createTextNode("Test Completed"));
+    }
   }
 }
 
