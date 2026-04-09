@@ -1,10 +1,11 @@
 export const LoggerConfig = {
   level: "DEBUG",
-  subscribers: [console.log],
+  subscribers: [] as ((...messages: string[]) => void)[],
 };
 
 const LOGGER = {
   error: (service: string, ...messages: any[]) => {
+    console.error(service, ...messages);
     LoggerConfig.subscribers.forEach((subscriber) =>
       subscriber("ERROR", service, ...messages),
     );
@@ -27,6 +28,7 @@ export function LoggerConfigReload() {
   switch (LoggerConfig.level) {
     case "DEBUG":
       LOGGER.debug = (service, ...messages) => {
+        console.debug(service, ...messages);
         LoggerConfig.subscribers.forEach((subscriber) =>
           subscriber("DEBUG:", service, ...messages),
         );
@@ -42,12 +44,14 @@ export function LoggerConfigReload() {
       };
     case "INFO":
       LOGGER.info = (service, ...messages) => {
+        console.info(service, ...messages);
         LoggerConfig.subscribers.forEach((subscriber) =>
           subscriber(" INFO:", service, ...messages),
         );
       };
     case "WARN":
       LOGGER.warn = (service, ...messages) => {
+        console.warn(service, ...messages);
         LoggerConfig.subscribers.forEach((subscriber) =>
           subscriber(" WARN:", service, ...messages),
         );

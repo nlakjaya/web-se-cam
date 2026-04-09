@@ -1,5 +1,5 @@
 import { VideoPipeline } from "../../../ts/service/video-pipeline";
-import { VideoOverlay } from "../../../ts/service/video-overlay";
+import { VideoStats } from "../../../ts/service/video-stats";
 import { DeviceAccess } from "../../../ts/service/device-access";
 import { sleep } from "../../ts/base";
 
@@ -7,21 +7,26 @@ const app = document.getElementById("app");
 
 async function happyPath() {
   const video = new VideoPipeline();
-  const overlay = new VideoOverlay();
+  const stats = new VideoStats();
   const devices = new DeviceAccess();
 
-  video.addLayer(overlay);
-  overlay.updateOptions({ showStats: true });
-
-  if (app) {
-    app.append(video.getCanvasElement());
-  }
+  video.addLayer(stats);
 
   const mediaStream = await devices.start({
     video: { facingMode: "environment" },
     audio: {},
   });
   video.setMediaStream(mediaStream);
+
+  const statsElement = document.createElement("pre");
+  const updateStatus = () => {
+    statsElement.textContent = `${stats.getFps(2)} fps\n${stats.getFrameCount()} frames`;
+  };
+  setInterval(updateStatus, 100);
+
+  if (app) {
+    app.append(video.getCanvasElement(), statsElement);
+  }
 }
 
 happyPath();

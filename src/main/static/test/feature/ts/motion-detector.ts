@@ -32,9 +32,7 @@ async function happyPath() {
   motion.addTrigger(trigger);
 
   if (app) {
-    app.appendChild(video.getCanvasElement());
-    app.appendChild(motionCanvas);
-    app.appendChild(triggerCounterElement);
+    app.append(video.getCanvasElement(), motionCanvas, triggerCounterElement);
   }
 
   const mediaStream = await devices.start({

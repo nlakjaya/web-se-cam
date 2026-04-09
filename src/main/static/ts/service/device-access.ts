@@ -277,10 +277,10 @@ export class DeviceAccess {
     logger.debug("start called:", options);
     options = options
       ? {
-          video: options?.video
+          video: options.video
             ? { ...defaultOptions.video, ...options.video }
             : undefined,
-          audio: options?.audio
+          audio: options.audio
             ? { ...defaultOptions.audio, ...options.audio }
             : undefined,
         }

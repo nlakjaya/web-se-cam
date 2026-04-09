@@ -19,11 +19,12 @@ async function happyPath() {
 <div style="position:absolute; top:2px; left:2px; bottom:2px; background:gray;"></div>\
 <div style="position:absolute; top:0px; left:2px; bottom:0px; border-right:2px dotted black;"></div> \
 </div>';
-  const levelStyle = (levelIndicator.firstChild?.firstChild as HTMLDivElement)
-    ?.style;
+  const levelStyle = (
+    (levelIndicator.firstChild as ChildNode).firstChild as HTMLDivElement
+  ).style;
   const thresholdStyle = (
-    levelIndicator.firstChild?.childNodes[1] as HTMLDivElement
-  )?.style;
+    (levelIndicator.firstChild as ChildNode).childNodes[1] as HTMLDivElement
+  ).style;
 
   const storage = new Storage();
   // const uploader = new Uploader("/upload");
@@ -56,12 +57,10 @@ async function happyPath() {
     motionCanvas.style.width = "100%";
     motionCanvas.style.imageRendering = "pixelated";
 
-    app.appendChild(video.getCanvasElement());
-    app.appendChild(motionCanvas);
+    app.append(video.getCanvasElement(), motionCanvas, levelIndicator);
 
-    app.appendChild(levelIndicator);
     thresholdStyle.width = (20 * 100) / 255 + "%";
-    function levelIndicatorAnimator() {
+    const levelIndicatorAnimator = () => {
       levelStyle.width = (noise.peakLevel * 100) / 255 + "%";
       if (!mediaStream.active) {
         console.log("level indicator: stopped");
@@ -69,7 +68,7 @@ async function happyPath() {
         return;
       }
       requestAnimationFrame(levelIndicatorAnimator);
-    }
+    };
     levelIndicatorAnimator();
   }
 

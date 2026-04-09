@@ -26,7 +26,7 @@ async function happyPath() {
   const recorder = new MediaRecorder({}, ...mediaStream.getTracks());
   recorder.start();
   if (app) {
-    app.appendChild(videoElement);
+    app.append(videoElement);
   }
 
   await sleep(3000);
@@ -52,8 +52,8 @@ async function happyPath() {
   videoElement.srcObject = null;
   devices.stop();
   if (app) {
-    app.removeChild(videoElement);
-    app.appendChild(document.createTextNode("Test Completed"));
+    videoElement.remove();
+    app.append(document.createTextNode("Test Completed"));
   }
 }
 

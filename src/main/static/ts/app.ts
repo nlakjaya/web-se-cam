@@ -1,20 +1,18 @@
+import { ContinuousRecorder } from "./service/continuous-recorder";
+import { DeviceAccess } from "./service/device-access";
+import { MediaRecorder } from "./service/media-recorder";
+import { MotionDetector } from "./service/motion-detector";
+import { NightVision } from "./service/night-vision";
+import { NoiseDetector } from "./service/noise-detector";
+import { Sensor } from "./service/sensor";
+import { VideoOverlay } from "./service/video-overlay";
+import { VideoPipeline } from "./service/video-pipeline";
+import { VideoStats } from "./service/video-stats";
 import { Logger } from "./util/logger";
 
-import { Uploader } from "./service/uploader";
-import { Storage } from "./service/storage";
-import { DeviceAccess } from "./service/device-access";
-import { VideoOverlay } from "./service/video-overlay";
-import { VideoPipeline, VideoLayer } from "./service/video-pipeline";
-import { NightVision } from "./service/night-vision";
-import { MotionDetector } from "./service/motion-detector";
-import { NoiseDetector } from "./service/noise-detector";
-import { MediaRecorder } from "./service/media-recorder";
-import { ContinuousRecorder } from "./service/continuous-recorder";
-import { Sensor } from "./service/sensor";
-
-type StatsData = {
-  deviceId?: string;
-  deviceTimestamp?: number;
+export type Stats = {
+  deviceTimestamp: number;
+  status: string;
   batteryLevel?: number;
   batteryCharging?: boolean;
   batteryEta?: number;
@@ -25,23 +23,15 @@ type StatsData = {
   altitude?: number;
 };
 
-type StatsConfig = {
-  url?: string;
-  interval?: number;
-  sendStats?: () => Promise<void>;
-  timeoutId?: any;
-};
-
-type AppOptions = {
+export type AppOptions = {
   videoOverlay?: Parameters<VideoOverlay["updateOptions"]>[0];
   nightVision?: Parameters<NightVision["updateOptions"]>[0];
   motionDetector?: Parameters<MotionDetector["updateOptions"]>[0];
   noiseDetector?: Parameters<NoiseDetector["updateOptions"]>[0];
-  uploadUrl?: string;
-  statsConfig?: { url: string; interval: number };
+  statsInterval?: number;
 };
 
-type ActivateOptions = {
+export type ActivateOptions = {
   deviceId: string;
   deviceAccess?: Parameters<DeviceAccess["start"]>[0];
   continuousRecording?: ConstructorParameters<typeof MediaRecorder>[0] & {
@@ -51,32 +41,15 @@ type ActivateOptions = {
     preRollMs?: number;
     interval: number;
     releaseMs: number;
-    triggers: ("MOTION" | "NOISE")[];
+    triggers: ("motion" | "noise")[];
   };
 };
 
-class FrameCounter implements VideoLayer {
-  private frameCount: number;
-  constructor() {
-    this.frameCount = 0;
-  }
-  draw(): void {
-    this.frameCount++;
-  }
-  resetFrameCount() {
-    this.frameCount = 0;
-  }
-  getFrameCount() {
-    return this.frameCount;
-  }
-}
-
 const logger = new Logger("App");
 export class App {
-  private uploader?: Uploader;
-  private storage: Storage;
   private deviceAccess: DeviceAccess;
   private videoPipeline: VideoPipeline;
+  private videoStats: VideoStats;
   private videoOverlay: VideoOverlay;
   private motionDetector: MotionDetector;
   private nightVision: NightVision;
@@ -89,16 +62,20 @@ export class App {
   private triggerMediaRecorder: MediaRecorder | null;
   private triggerRecorder: ContinuousRecorder | null;
 
-  private audioLevelListener: ((level: number) => void) | null;
-
   private sensor: Sensor;
-  private statsConfig: StatsConfig;
-  private frameCounter: FrameCounter;
+  private startBatteryListener: boolean;
+  private startGeoLocationListener: boolean;
+  statsInterval?: number;
+  statsTimeoutId?: any;
 
-  constructor() {
-    this.storage = new Storage();
+  constructor(
+    private onSave: (filename: string, blob: Blob) => void,
+    private onStats: (stats: Stats) => void,
+    private audioLevelListener: (level: number) => void,
+  ) {
     this.deviceAccess = new DeviceAccess();
     this.videoPipeline = new VideoPipeline();
+    this.videoStats = new VideoStats();
     this.videoOverlay = new VideoOverlay();
     this.nightVision = new NightVision();
     this.motionDetector = new MotionDetector();
@@ -111,17 +88,30 @@ export class App {
     this.triggerMediaRecorder = null;
     this.triggerRecorder = null;
 
-    this.audioLevelListener = null;
-
-    this.storage.init();
     this.videoPipeline.addLayer(this.nightVision);
     this.videoPipeline.addLayer(this.motionDetector);
     this.videoPipeline.addLayer(this.videoOverlay);
+    this.videoPipeline.addLayer(this.videoStats);
 
     this.sensor = new Sensor();
-    this.statsConfig = {};
-    this.frameCounter = new FrameCounter();
-    this.videoPipeline.addLayer(this.frameCounter);
+    this.startBatteryListener = true;
+    this.startGeoLocationListener = true;
+  }
+
+  updateOptions(options: AppOptions) {
+    if (options.videoOverlay)
+      this.videoOverlay.updateOptions(options.videoOverlay);
+    if (options.nightVision)
+      this.nightVision.updateOptions(options.nightVision);
+    if (options.motionDetector)
+      this.motionDetector.updateOptions(options.motionDetector);
+    if (options.noiseDetector)
+      this.noiseDetector.updateOptions(options.noiseDetector);
+    if (options.statsInterval) {
+      this.statsInterval = options.statsInterval;
+    } else {
+      this.statsInterval = undefined;
+    }
   }
 
   getVideoCanvas() {
@@ -132,8 +122,65 @@ export class App {
     return this.motionDetector.getCanvasElement();
   }
 
-  setAudioLevelListener(listener: ((level: number) => void) | null) {
-    this.audioLevelListener = listener;
+  private sendStats(stats?: Partial<Stats>) {
+    if (this.statsTimeoutId) {
+      clearTimeout(this.statsTimeoutId);
+      this.statsTimeoutId = undefined;
+    }
+    const _this = this;
+    const sendStats = (stats?: Partial<Stats>) => {
+      const fullStats = {
+        status: _this.mediaStream ? "active" : "inactive",
+        ...stats,
+        deviceTimestamp: Date.now(),
+        frameCount: _this.videoStats.getFrameCount(),
+      };
+      logger.debug("sendStats:", fullStats);
+      _this.onStats(fullStats);
+    };
+    if (this.statsInterval) {
+      this.statsTimeoutId = setTimeout(sendStats, this.statsInterval);
+    }
+    sendStats(stats);
+  }
+
+  private createMediaRecorder(
+    options: ConstructorParameters<typeof MediaRecorder>[0],
+  ) {
+    if (!this.mediaStream) {
+      const errorMsg = "no active media stream";
+      logger.error("createMediaRecorder failed:", errorMsg);
+      throw new Error(errorMsg);
+    }
+    return new MediaRecorder(
+      options,
+      ...this.videoPipeline.getCanvasElement().captureStream().getVideoTracks(),
+      ...this.mediaStream.getAudioTracks(),
+    );
+  }
+
+  private batteryEvents(battery: {
+    level?: number;
+    charging?: boolean;
+    eta?: number;
+  }) {
+    // TODO: battery based events
+    if (
+      this.mediaStream &&
+      ((battery.charging === false && (battery.level ?? 1) < 0.5) ||
+        (battery.charging === true &&
+          (battery.level ?? 1) < 0.2 &&
+          !battery.eta))
+    ) {
+      this.deactivate();
+    }
+    if (
+      battery.charging === true &&
+      (battery.level ?? 0) > 0.8 &&
+      battery.eta
+    ) {
+      // this.activate();
+    }
   }
 
   async activate(options: ActivateOptions) {
@@ -147,10 +194,19 @@ export class App {
     this.videoPipeline.setMediaStream(this.mediaStream);
     this.noiseDetector.setMediaStream(this.mediaStream);
 
-    const onSave = (filename: string, blob: Blob) =>
-      this.uploader
-        ? this.uploader.post(filename, blob)
-        : this.storage.save(filename, blob);
+    const _this = this;
+    function levelIndicatorAnimator() {
+      if (_this.mediaStream?.active) {
+        _this.audioLevelListener(_this.noiseDetector.peakLevel);
+        requestAnimationFrame(levelIndicatorAnimator);
+      } else {
+        logger.debug("level indicator: stopped");
+        _this.audioLevelListener(0);
+      }
+    }
+    levelIndicatorAnimator();
+    logger.debug("level indicator: started");
+
     if (options.continuousRecording) {
       this.continuousMediaRecorder = this.createMediaRecorder(
         options.continuousRecording,
@@ -159,148 +215,109 @@ export class App {
       this.continuousRecorder.updateOptions({
         fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-continuous%n`,
         interval: options.continuousRecording.interval,
-        onSave,
+        onSave: this.onSave,
       });
 
       this.continuousRecorder.start(this.continuousMediaRecorder);
     }
+
     if (options.triggerRecording) {
       this.triggerMediaRecorder = this.createMediaRecorder(
         options.triggerRecording,
       );
-      this.triggerRecorder = new ContinuousRecorder();
-      this.triggerRecorder.updateOptions({
+      const triggerRecorder = (this.triggerRecorder = new ContinuousRecorder());
+      triggerRecorder.updateOptions({
         fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-trigger%n`,
+        fileNamingRolloverNewTs: false,
         interval: options.triggerRecording.interval,
-        onSave,
+        onSave: this.onSave,
       });
 
       if (options.triggerRecording.triggers) {
-        const trigger = (instance: any) => {
+        const preRollMs = options.triggerRecording.preRollMs;
+        const setupPreRollRecording = () => {
+          if (preRollMs) {
+            this.triggerMediaRecorder?.start(undefined, preRollMs);
+          }
+        };
+        setupPreRollRecording();
+
+        const releaseMs = options.triggerRecording.releaseMs;
+        const triggerRelease = () => {
+          logger.info("Recording: ended");
+          triggerRecorder.stop();
+          setupPreRollRecording();
+          if (this.continuousMediaRecorder) {
+            this.continuousRecorder?.start(this.continuousMediaRecorder);
+          }
+          this.triggerTimeoutId = null;
+        };
+
+        const trigger = (triggerType: string) => {
           if (this.triggerTimeoutId) {
             clearTimeout(this.triggerTimeoutId);
           } else {
-            const triggerType =
-              instance instanceof MotionDetector
-                ? "motion"
-                : instance instanceof NoiseDetector
-                  ? "noise"
-                  : "trigger";
-            this.triggerRecorder?.updateOptions({
+            triggerRecorder.updateOptions({
               fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-${triggerType}%n`,
             });
             logger.info("Recording:", triggerType);
-            logger.debug("trigger recording started", this.triggerTimeoutId);
             this.continuousRecorder?.stop();
             if (this.triggerMediaRecorder) {
-              this.triggerRecorder?.start(this.triggerMediaRecorder);
+              triggerRecorder.start(this.triggerMediaRecorder);
             }
+            this.sendStats({ status: triggerType });
           }
-          this.triggerTimeoutId = setTimeout(() => {
-            logger.debug("trigger recording ended:", this.triggerTimeoutId);
-            this.triggerRecorder?.stop();
-            if (options.triggerRecording?.preRollMs) {
-              this.triggerMediaRecorder?.start(
-                undefined,
-                options.triggerRecording.preRollMs,
-              );
-            }
-            if (this.continuousMediaRecorder) {
-              this.continuousRecorder?.start(this.continuousMediaRecorder);
-            }
-            this.triggerTimeoutId = null;
-          }, options.triggerRecording?.releaseMs);
+          this.triggerTimeoutId = setTimeout(triggerRelease, releaseMs);
         };
-        if (options.triggerRecording.triggers.includes("MOTION")) {
-          this.motionDetector.addTrigger(trigger);
+        if (options.triggerRecording.triggers.includes("motion")) {
+          this.motionDetector.addTrigger(() => trigger("motion"));
         }
-        if (options.triggerRecording.triggers.includes("NOISE")) {
-          this.noiseDetector.addTrigger(trigger);
-        }
-        if (options.triggerRecording.preRollMs) {
-          this.triggerMediaRecorder.start(
-            undefined,
-            options.triggerRecording.preRollMs,
-          );
+        if (options.triggerRecording.triggers.includes("noise")) {
+          this.noiseDetector.addTrigger(() => trigger("noise"));
         }
       }
     }
 
-    const _this = this;
-    function levelIndicatorAnimator() {
-      if (_this.audioLevelListener) {
-        if (_this.mediaStream?.active) {
-          _this.audioLevelListener(_this.noiseDetector.peakLevel);
-          requestAnimationFrame(levelIndicatorAnimator);
-        } else {
-          logger.debug("level indicator: stopped");
-          _this.audioLevelListener(0);
-        }
-      }
+    if (
+      this.startBatteryListener &&
+      (await this.sensor.isSupported("Battery"))
+    ) {
+      this.sensor.setBatteryListener((battery) => {
+        this.sendStats({
+          batteryLevel: battery.level,
+          batteryCharging: battery.charging,
+          batteryEta: battery.eta,
+        });
+        this.batteryEvents(battery);
+      });
+      this.startBatteryListener = false;
     }
 
-    levelIndicatorAnimator();
-
-    if (this.statsConfig.url && this.statsConfig.interval) {
-      if (!this.statsConfig.sendStats) {
-        const stats: StatsData = {
-          deviceId: options.deviceId,
-        };
-        const { url, interval } = this.statsConfig;
-        this.statsConfig.sendStats = async () => {
-          logger.debug("send stats:", stats);
-          if (this.statsConfig.timeoutId) {
-            clearTimeout(this.statsConfig.timeoutId);
-          }
-          this.statsConfig.timeoutId = setTimeout(
-            this.statsConfig.sendStats as () => Promise<void>,
-            interval,
-          );
-          stats.deviceTimestamp = Date.now();
-          stats.frameCount = this.frameCounter.getFrameCount();
-          fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(stats),
-          }).catch((error) => {
-            logger.error("send stats failed:", error);
-          });
-        };
-        if (await this.sensor.isSupported("Battery")) {
-          this.sensor.setBatteryListener((batteryInfo) => {
-            if (batteryInfo.level !== undefined)
-              stats.batteryLevel = batteryInfo.level;
-            if (batteryInfo.charging !== undefined)
-              stats.batteryCharging = batteryInfo.charging;
-            stats.batteryEta = batteryInfo.eta;
-            if (this.statsConfig.timeoutId)
-              (this.statsConfig.sendStats as () => Promise<void>)();
-          });
-        }
-        if (await this.sensor.isSupported("Geolocation")) {
-          this.sensor.setGeolocationListener((geolocation) => {
-            stats.locationTimestamp = geolocation.timestamp;
-            stats.latitude = geolocation.latitude;
-            stats.longitude = geolocation.longitude;
-            if (geolocation.altitude !== null)
-              stats.altitude = geolocation.altitude;
-            if (this.statsConfig.timeoutId)
-              (this.statsConfig.sendStats as () => Promise<void>)();
-          });
-        }
-      }
-      this.frameCounter.resetFrameCount();
-      this.statsConfig.sendStats();
+    if (
+      this.startGeoLocationListener &&
+      (await this.sensor.isSupported("Geolocation"))
+    ) {
+      this.sensor.setGeolocationListener((geolocation) =>
+        this.sendStats({
+          locationTimestamp: geolocation.timestamp,
+          latitude: geolocation.latitude,
+          longitude: geolocation.longitude,
+          altitude: geolocation.altitude ?? undefined,
+        }),
+      );
+      this.startGeoLocationListener = false;
     }
+
+    this.videoStats.reset();
+    this.sendStats();
   }
 
   async deactivate() {
     this.deviceAccess.stop();
+    this.mediaStream = null;
     this.videoPipeline.clearCanvas();
     this.motionDetector.clearHistory();
-    this.mediaStream = null;
+
     if (this.triggerTimeoutId) {
       clearTimeout(this.triggerTimeoutId);
       this.triggerTimeoutId = null;
@@ -309,48 +326,11 @@ export class App {
       await this.continuousRecorder?.stop();
       await this.triggerMediaRecorder?.stop();
     }
-    if (this.statsConfig.timeoutId) {
-      clearTimeout(this.statsConfig.timeoutId);
-      this.statsConfig.timeoutId = undefined;
-    }
-  }
+    this.continuousMediaRecorder = null;
+    this.continuousRecorder = null;
+    this.triggerMediaRecorder = null;
+    this.triggerRecorder = null;
 
-  updateOptions(options: AppOptions) {
-    if (options.videoOverlay)
-      this.videoOverlay.updateOptions(options.videoOverlay);
-    if (options.nightVision)
-      this.nightVision.updateOptions(options.nightVision);
-    if (options.motionDetector)
-      this.motionDetector.updateOptions(options.motionDetector);
-    if (options.noiseDetector)
-      this.noiseDetector.updateOptions(options.noiseDetector);
-    if (options.uploadUrl) {
-      this.uploader = new Uploader(options.uploadUrl);
-      this.uploader.updateOptions({ fallbackStorage: this.storage });
-    } else {
-      this.uploader = undefined;
-    }
-    if (options.statsConfig) {
-      this.statsConfig.url = options.statsConfig.url;
-      this.statsConfig.interval = options.statsConfig.interval;
-    } else {
-      this.statsConfig.url = undefined;
-      this.statsConfig.interval = undefined;
-    }
-  }
-
-  private createMediaRecorder(
-    options: ConstructorParameters<typeof MediaRecorder>[0],
-  ) {
-    if (!this.mediaStream) {
-      const errorMsg = "no active media stream";
-      logger.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-    return new MediaRecorder(
-      options,
-      ...this.videoPipeline.getCanvasElement().captureStream().getVideoTracks(),
-      ...this.mediaStream.getAudioTracks(),
-    );
+    this.sendStats();
   }
 }

@@ -1,9 +1,9 @@
 import { VideoPipeline } from "../../../ts/service/video-pipeline";
 import { DeviceAccess } from "../../../ts/service/device-access";
-import { sleep } from "../../ts/base";
 import { VideoOverlay } from "../../../ts/service/video-overlay";
 import { TrackControls } from "../../../ts/componant/track-controls";
 import { TRACK_CONTROLS } from "../../../ts/util/constants";
+import { sleep } from "../../ts/base";
 
 const app = document.getElementById("app");
 

@@ -1,5 +1,6 @@
 import { Logger } from "../util/logger";
 import { VideoLayer } from "./video-pipeline";
+import { VideoStats } from "./video-stats";
 
 type Options = {
   margin: number;
@@ -38,13 +39,11 @@ export const defaultOptions: Options = {
 
 const logger = new Logger("VideoOverlay");
 export class VideoOverlay implements VideoLayer {
-  private stats: { frameCount: number; lastFrameMs?: number };
+  private stats: VideoStats;
   private options: Options;
 
   constructor() {
-    const canvasElement = document.createElement("canvas");
-
-    this.stats = { frameCount: 0 };
+    this.stats = new VideoStats(15);
     this.options = defaultOptions;
 
     logger.debug("instance created");
@@ -87,13 +86,8 @@ export class VideoOverlay implements VideoLayer {
   }
 
   drawStats(ctx: CanvasRenderingContext2D) {
-    const now = performance.now();
-    const statsString = `${
-      this.stats.lastFrameMs
-        ? Math.round(1000.0 / (now - this.stats.lastFrameMs))
-        : "-"
-    } fps (${this.stats.frameCount++})`;
-    this.stats.lastFrameMs = now;
+    this.stats.draw();
+    const statsString = `${this.stats.getFps(1)} fps (${this.stats.getFrameCount()})`;
     this.drawText(
       ctx,
       statsString,

@@ -76,6 +76,12 @@ export class P2P {
 
   async send(message: string) {
     logger.debug("send called:", message);
-    this.channel?.send(message);
+    if (this.channel) {
+      this.channel.send(message);
+    } else {
+      const errorMsg = "no channel";
+      logger.error("send failed:", errorMsg);
+      throw new Error(errorMsg);
+    }
   }
 }

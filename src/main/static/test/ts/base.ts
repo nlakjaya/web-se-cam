@@ -21,8 +21,7 @@ resetButton.onclick = () =>
 resetButton.textContent = "Clear Cache and Reload";
 const app = document.getElementById("app");
 if (app) {
-  app.appendChild(resetButton);
-  app.appendChild(document.createElement("br"));
+  app.append(resetButton, document.createElement("br"));
 }
 
 export const sleep = (ms: number) =>

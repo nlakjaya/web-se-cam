@@ -41,8 +41,7 @@ async function happyPath() {
     motionCanvas.style.width = "100%";
     motionCanvas.style.imageRendering = "pixelated";
 
-    app.appendChild(video.getCanvasElement());
-    app.appendChild(motionCanvas);
+    app.append(video.getCanvasElement(), motionCanvas);
   }
 
   const spRecorder = new MediaRecorder(

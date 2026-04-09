@@ -1,10 +1,9 @@
 import { Logger } from "../util/logger";
-import { Storage } from "./storage";
 
 type Options = {
   url: string;
   mode: "blob";
-  fallbackStorage?: Storage;
+  fallback?: (filename: string, blob: Blob) => Promise<void>;
 };
 
 const logger = new Logger("Uploader");
@@ -51,10 +50,11 @@ export class Uploader {
           throw new Error("Unsupported mode:", this.options.mode);
       }
     } catch (error) {
-      logger.warn("post failed:", filename, error);
-      if (this.options.fallbackStorage) {
-        logger.info("Falling back to storage");
-        await this.options.fallbackStorage.save(filename, blob);
+      if (this.options.fallback) {
+        logger.warn("post failed:", filename, "falling back...");
+        await this.options.fallback(filename, blob);
+      } else {
+        logger.warn("post failed:", filename, error);
       }
     }
   }

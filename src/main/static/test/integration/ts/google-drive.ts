@@ -12,7 +12,7 @@ const app = document.getElementById("app");
 async function happyPath() {
   const gsiClient = new GoogleClient(gsiClientId, ["drive"]);
   gsiClient.updateOptions({
-    request: { prompt: "consent", login_hint },
+    login_hint,
     renewTokenEvent: (token: any) => {
       console.log("token:", token);
     },
@@ -30,7 +30,7 @@ async function happyPath() {
   );
 
   if (app) {
-    app.appendChild(document.createTextNode("Test Completed"));
+    app.append(document.createTextNode("Test Completed"));
   }
 }
 

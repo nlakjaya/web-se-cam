@@ -9,10 +9,7 @@ type Token = {
 type Options = {
   clientId: string;
   scopes: ("drive" | "spreadsheets")[];
-  request: {
-    prompt: "none" | "consent";
-    login_hint?: string;
-  };
+  login_hint?: string;
   token?: Token;
   renewTokenEvent?: (token: Token) => void;
 };
@@ -28,7 +25,7 @@ export class GoogleClient {
       scriptElement.src = "https://accounts.google.com/gsi/client";
       scriptElement.async = true;
       scriptElement.defer = true;
-      htmlHead.appendChild(scriptElement);
+      htmlHead.append(scriptElement);
 
       this.noInitClient = false;
       return new Promise<void>((resolve, reject) => {
@@ -42,7 +39,7 @@ export class GoogleClient {
   private options: Options;
 
   constructor(clientId: string, scopes: Options["scopes"]) {
-    this.options = { clientId, scopes, request: { prompt: "consent" } };
+    this.options = { clientId, scopes };
 
     logger.debug("instance created");
   }
@@ -64,12 +61,13 @@ export class GoogleClient {
     return this.options.token;
   }
 
-  private async renewAccessToken(): Promise<Token> {
+  private async renewAccessToken(prompt = "none"): Promise<Token> {
     logger.debug("renewAccessToken called");
     await GoogleClient.initClient();
     return new Promise<Token>((resolve, reject) => {
-      // @ts-expect-error
-      const tokenClient = google.accounts.oauth2.initTokenClient({
+      const tokenClient = (
+        window as any
+      ).google.accounts.oauth2.initTokenClient({
         client_id: this.options.clientId,
         scope: this.options.scopes
           .map((scope) => `https://www.googleapis.com/auth/${scope}`)
@@ -85,6 +83,10 @@ export class GoogleClient {
               expiry: Date.now() + (parseInt(response.expires_in) - 60) * 1000,
             };
             resolve(token);
+          } else if (response.error == "interaction_required") {
+            setTimeout(() => {
+              this.renewAccessToken("consent").then(resolve).catch(reject);
+            }, 0);
           } else {
             const errorMsg = "could not retreive access_token";
             logger.error(errorMsg, response);
@@ -92,7 +94,10 @@ export class GoogleClient {
           }
         },
       });
-      tokenClient.requestAccessToken(this.options.request);
+      tokenClient.requestAccessToken({
+        prompt,
+        login_hint: this.options.login_hint,
+      });
     });
   }
 }

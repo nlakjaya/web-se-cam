@@ -123,21 +123,23 @@ class MediaRecorderWrapper {
     }
 
     const handler = this.handlers.pop();
-    if (handler?.resolve) {
-      const prevResolve = handler.resolve;
-      await new Promise<void>(
-        (resolve) =>
-          (handler.resolve = (blob: Blob) => {
-            prevResolve(blob);
-            logger.debug("prevResolve called:", blob);
-            resolve();
-          }),
-      );
-    }
-    if (handler?.nativeRecorder.state == "recording") {
-      handler.nativeRecorder.stop();
-      this.timeSlice = undefined;
-      return new Promise((resolve) => (handler.resolve = resolve));
+    if (handler) {
+      if (handler.resolve) {
+        const prevResolve = handler.resolve;
+        await new Promise<void>(
+          (resolve) =>
+            (handler.resolve = (blob: Blob) => {
+              prevResolve(blob);
+              logger.debug("prevResolve called:", blob);
+              resolve();
+            }),
+        );
+      }
+      if (handler.nativeRecorder.state == "recording") {
+        handler.nativeRecorder.stop();
+        this.timeSlice = undefined;
+        return new Promise((resolve) => (handler.resolve = resolve));
+      }
     }
     const error = new Error("Media is not recording");
     logger.error("stop failed:", error);

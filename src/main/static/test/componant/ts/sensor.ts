@@ -12,7 +12,7 @@ const pElements: {
   Magnetometer: document.createElement("p"),
 };
 if (app) {
-  Object.values(pElements).forEach((p) => app.appendChild(p));
+  Object.values(pElements).forEach((p) => app.append(p));
 }
 
 const sensor = new Sensor();
@@ -24,12 +24,12 @@ async function startSensor(
     canvas.width = 200;
     canvas.height = 200;
     if (app) {
-      app.appendChild(canvas);
+      app.append(canvas);
     }
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     const center = { x: ctx.canvas.width / 2, y: ctx.canvas.height / 2 };
     const scale = 10;
-    function drawGrid() {
+    const drawGrid = () => {
       ctx.strokeStyle = "lightgray";
 
       ctx.beginPath();
@@ -42,7 +42,7 @@ async function startSensor(
       ctx.beginPath();
       ctx.arc(center.x, center.y, 10 * scale, 0, Math.PI * 2);
       ctx.stroke();
-    }
+    };
     pElements[sensorType].textContent = `${sensorType}: Waiting for data...`;
     drawGrid();
 
@@ -110,7 +110,7 @@ async function happyPath() {
     pElements.Geolocation.textContent = "Geolocation: ";
     const requestGeolocationButton = document.createElement("button");
     requestGeolocationButton.textContent = "Request";
-    pElements.Geolocation.appendChild(requestGeolocationButton);
+    pElements.Geolocation.append(requestGeolocationButton);
     requestGeolocationButton.onclick = () => {
       let lastGeolocation: Parameters<
         Parameters<Sensor["setGeolocationListener"]>[0]
@@ -124,7 +124,7 @@ async function happyPath() {
         heading: null,
         speed: null,
       };
-      pElements.Geolocation.removeChild(requestGeolocationButton);
+      requestGeolocationButton.remove();
       pElements.Geolocation.textContent = "Geolocation: Waiting for data...";
       sensor.setGeolocationListener(
         (geolocation) => {
@@ -155,18 +155,18 @@ async function happyPath() {
   await startSensor("Gyroscope");
   await startSensor("Magnetometer");
 
-  // TODO
+  // TODO: later if needed
   // window.addEventListener("deviceorientation", (event) => {
   //   console.log("Alpha:", event.alpha); // Rotation around z-axis
   //   console.log("Beta:", event.beta); // Rotation around x-axis
   //   console.log("Gamma:", event.gamma); // Rotation around y-axis
   // });
 
-  // TODO
+  // TODO: later if needed
   // window.addEventListener("devicemotion", (event) => {
-  //   console.log("Acceleration X:", event.acceleration?.x);
-  //   console.log("Acceleration Y:", event.acceleration?.y);
-  //   console.log("Acceleration Z:", event.acceleration?.z);
+  //   console.log("Acceleration X:", event.acceleration.x);
+  //   console.log("Acceleration Y:", event.acceleration.y);
+  //   console.log("Acceleration Z:", event.acceleration.z);
   // });
 }
 

@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "lib": ["DOM", "ESNext"],
+    "skipLibCheck": true,
+    "noEmit": true,
+  },
+  "include": ["src/main/static/**/*"]
+}

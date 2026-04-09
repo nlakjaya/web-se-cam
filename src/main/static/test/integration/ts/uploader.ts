@@ -8,7 +8,9 @@ async function happyPath() {
   const uploader = new Uploader("/dev/null");
   const storage = new Storage();
 
-  uploader.updateOptions({ fallbackStorage: storage });
+  uploader.updateOptions({
+    fallback: (filename: string, blob: Blob) => storage.save(filename, blob),
+  });
   await storage.init({
     browserStorage: { appName: "test", storeName: "blobs" },
   });
@@ -34,13 +36,11 @@ async function happyPath() {
   await storage.clear();
 
   if (app) {
+    let status = "Test Completed";
     if (storageList.length) {
-      app.appendChild(
-        document.createTextNode("Test Failed (check backend logs)"),
-      );
-    } else {
-      app.appendChild(document.createTextNode("Test Completed"));
+      status = "Test Failed (check backend logs)";
     }
+    app.append(document.createTextNode(status));
   }
 }
 

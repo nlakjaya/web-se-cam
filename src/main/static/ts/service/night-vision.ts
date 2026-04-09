@@ -9,7 +9,7 @@ type Options = {
 
 export const defaultOptions: Options = {
   subPixelMultiplier: 1,
-  mixFrames: 1,
+  mixFrames: 0,
   mixSubPixels: false,
 };
 

@@ -33,7 +33,7 @@ export class TrackControls {
     capabilities: MediaTrackCapabilities,
     settings: MediaTrackSettings,
   ) {
-    this.capabilities = capabilities as Capabilities;
+    this.capabilities = capabilities as unknown as Capabilities;
     this.settings = settings as Settings;
 
     logger.debug("instance created");
@@ -140,7 +140,7 @@ export class TrackControls {
         const option = document.createElement("option");
         option.value = opt;
         option.textContent = opt;
-        select.appendChild(option);
+        select.append(option);
       });
       select.value = String(this.settings[capability] ?? "");
       select.onchange = () =>

@@ -19,7 +19,7 @@ async function happyPath(clientId: string, recipientId?: string) {
   const signaling = new Signaling(clientId, {
     onMessage: (message: string, from: string) => {
       if (app && from == clientB) {
-        app.appendChild(document.createTextNode(message));
+        app.append(document.createTextNode(message));
       }
     },
     onOpen: async () => {

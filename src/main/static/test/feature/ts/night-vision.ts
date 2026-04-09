@@ -13,6 +13,8 @@ async function happyPath() {
   const devices = new DeviceAccess();
 
   video.addLayer(nightVision);
+  const canvasElement = video.getCanvasElement();
+
   const optionsCycle = [
     {
       subPixelMultiplier: undefined,
@@ -57,7 +59,7 @@ async function happyPath() {
   ];
 
   if (app) {
-    app.appendChild(video.getCanvasElement());
+    app.append(canvasElement);
   }
 
   const mediaStream = await devices.start({
@@ -71,9 +73,9 @@ async function happyPath() {
     if (idx >= optionsCycle.length) {
       clearInterval(intervalId);
       devices.stop();
+      canvasElement.remove();
       if (app) {
-        app.removeChild(video.getCanvasElement());
-        app.appendChild(document.createTextNode("Test Completed"));
+        app.append(document.createTextNode("Test Completed"));
       }
     }
     logger.debug("cycle options: ", JSON.stringify(optionsCycle[idx]));

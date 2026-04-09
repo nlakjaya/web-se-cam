@@ -3,9 +3,19 @@ import { MediaRecorder } from "./media-recorder";
 
 type Options = {
   interval: number;
+  rolloverMinimumThresholdMs: number;
   fileNaming: string;
+  fileNamingRolloverNewTs: boolean;
   sequenceNoPadding?: number;
-  onSave?: (filename: string, blob: Blob) => {};
+  onSave?: (filename: string, blob: Blob) => void;
+};
+
+export const defaultOptions: Options = {
+  interval: 60000,
+  fileNamingRolloverNewTs: true,
+  rolloverMinimumThresholdMs: 2000,
+  fileNaming: "%YYYY%MM%DD_%hh%mm%ss-cr%n",
+  sequenceNoPadding: 3,
 };
 
 const logger = new Logger("ContinuousRecorder");
@@ -16,11 +26,7 @@ export class ContinuousRecorder {
   private timeoutId?: any;
 
   constructor() {
-    this.options = {
-      interval: 60000,
-      fileNaming: "%YYYY%MM%DD_%hh%mm%ss-cr%n",
-      sequenceNoPadding: 5,
-    };
+    this.options = defaultOptions;
 
     logger.debug("instance created");
   }
@@ -41,35 +47,41 @@ export class ContinuousRecorder {
     }
 
     let sequenceNo = 1;
+    const now = new Date();
     const rollover = async () => {
       logger.debug("rollover called");
 
       if (this.mediaRecorder) {
-        const blob = await this.mediaRecorder.rollover();
-        if (this.options.onSave) {
-          this.options.onSave(this.currentFilename as string, blob);
-        }
+        const currentFilename = this.currentFilename as string;
+        this.mediaRecorder.rollover().then((blob) => {
+          this.options.onSave?.(currentFilename, blob);
+        });
       }
 
-      const now = new Date();
+      const filenameDate = this.options.fileNamingRolloverNewTs
+        ? new Date()
+        : now;
       this.currentFilename = `${this.options.fileNaming
         .replaceAll(
           "%n",
           String(sequenceNo).padStart(this.options.sequenceNoPadding ?? 0, "0"),
         )
-        .replaceAll("%YYYY", String(now.getFullYear()))
-        .replaceAll("%MM", String(now.getMonth() + 1).padStart(2, "0"))
-        .replaceAll("%DD", String(now.getDate()).padStart(2, "0"))
-        .replaceAll("%hh", String(now.getHours()).padStart(2, "0"))
-        .replaceAll("%mm", String(now.getMinutes()).padStart(2, "0"))
+        .replaceAll("%YYYY", String(filenameDate.getFullYear()))
+        .replaceAll("%MM", String(filenameDate.getMonth() + 1).padStart(2, "0"))
+        .replaceAll("%DD", String(filenameDate.getDate()).padStart(2, "0"))
+        .replaceAll("%hh", String(filenameDate.getHours()).padStart(2, "0"))
+        .replaceAll("%mm", String(filenameDate.getMinutes()).padStart(2, "0"))
         .replaceAll(
           "%ss",
-          String(now.getSeconds()).padStart(2, "0"),
+          String(filenameDate.getSeconds()).padStart(2, "0"),
         )}.${fileNameExt}`;
       sequenceNo++;
 
-      const nextRollover =
+      let nextRollover =
         this.options.interval - (Date.now() % this.options.interval);
+      if (nextRollover < this.options.rolloverMinimumThresholdMs) {
+        nextRollover += this.options.interval;
+      }
       this.timeoutId = setTimeout(() => rollover(), nextRollover) as any;
       logger.debug("rollover scheduled in ms:", nextRollover);
     };
@@ -86,12 +98,12 @@ export class ContinuousRecorder {
       clearTimeout(this.timeoutId);
       this.timeoutId = undefined;
       if (this.mediaRecorder) {
-        const blob = await this.mediaRecorder.stop();
-        if (this.options.onSave) {
-          this.options.onSave(this.currentFilename as string, blob);
-        }
+        const currentFilename = this.currentFilename as string;
+        this.mediaRecorder.stop().then((blob) => {
+          this.options.onSave?.(currentFilename, blob);
+        });
+        this.mediaRecorder = undefined;
       }
-      this.mediaRecorder = undefined;
     }
   }
 }

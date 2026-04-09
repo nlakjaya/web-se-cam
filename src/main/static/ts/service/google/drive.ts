@@ -1,11 +1,10 @@
 import { Logger } from "../../util/logger";
 import { GoogleClient } from "./client";
-import { Storage } from "../storage";
 
 type Options = {
   gsiClient: GoogleClient;
   parents?: string[];
-  fallbackStorage?: Storage;
+  fallback?: (filename: string, blob: Blob) => Promise<void>;
 };
 
 const logger = new Logger("GoogleDrive");
@@ -62,10 +61,11 @@ export class GoogleDrive {
       }
       logger.debug("upload success:", filename, await response.json());
     } catch (error) {
-      logger.warn("upload failed:", filename, error);
-      if (this.options.fallbackStorage) {
-        logger.info("Falling back to storage");
-        await this.options.fallbackStorage.save(filename, blob);
+      if (this.options.fallback) {
+        logger.warn("upload failed:", filename, "falling back...");
+        await this.options.fallback(filename, blob);
+      } else {
+        logger.warn("upload failed:", filename, error);
       }
     }
   }

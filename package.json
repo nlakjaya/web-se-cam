@@ -7,7 +7,7 @@
     "setup": "npm install",
     "lint": "npx prettier --write package.json tsconfig.json .vscode/ src/",
     "start": "npx ts-node src/main/app.ts",
-    "test": "echo TODO; exit 1"
+    "ts-check": "npx tsc -p tsconfig.frontend.json"
   },
   "keywords": [],
   "author": "",

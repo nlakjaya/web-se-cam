@@ -50,7 +50,7 @@ export class Storage {
             request.onsuccess = (event) => {
               logger.debug(`indexedDB.open("${dbName}").onsuccess called`);
               _this.indexedDB = (
-                event?.target as IDBRequest<IDBDatabase>
+                event.target as IDBRequest<IDBDatabase>
               ).result;
               resolve(undefined);
             };
@@ -59,7 +59,7 @@ export class Storage {
                 `indexedDB.open("${dbName}").onupgradeneeded called`,
               );
               (
-                event?.target as IDBRequest<IDBDatabase>
+                event.target as IDBRequest<IDBDatabase>
               ).result.createObjectStore(options.storeName, {
                 keyPath: "filename",
               });
@@ -90,15 +90,13 @@ export class Storage {
   async save(filename: string, blob: Blob): Promise<void> {
     logger.debug("save called:", filename, blob);
 
-    const _this = this;
     if (this.options.browserStorage && this.indexedDB) {
+      const browserStorage = this.options.browserStorage;
+      const indexedDB = this.indexedDB;
       return await new Promise((resolve, reject) => {
-        const request = (_this.indexedDB as IDBDatabase)
-          .transaction(
-            [_this.options.browserStorage?.storeName as string],
-            "readwrite",
-          )
-          .objectStore(_this.options.browserStorage?.storeName as string)
+        const request = indexedDB
+          .transaction([browserStorage.storeName], "readwrite")
+          .objectStore(browserStorage.storeName)
           .put({ filename, blob });
         request.onerror = (error) => {
           logger.error("save failed:", filename, error);
@@ -117,10 +115,10 @@ export class Storage {
           a.style.display = "none";
           a.href = url;
           a.download = filename;
-          document.body.appendChild(a);
+          document.body.append(a);
           a.click();
           setTimeout(() => {
-            document.body.removeChild(a);
+            a.remove();
             URL.revokeObjectURL(url);
             logger.debug("save success");
             resolve(undefined);
@@ -136,15 +134,13 @@ export class Storage {
   async load(filename: string): Promise<Blob> {
     logger.debug("load called:", filename);
 
-    const _this = this;
-    if (this.options?.browserStorage && this.indexedDB) {
+    if (this.options.browserStorage && this.indexedDB) {
+      const browserStorage = this.options.browserStorage;
+      const indexedDB = this.indexedDB;
       return await new Promise((resolve, reject) => {
-        const request = (_this.indexedDB as IDBDatabase)
-          .transaction(
-            [_this.options.browserStorage?.storeName as string],
-            "readonly",
-          )
-          .objectStore(_this.options.browserStorage?.storeName as string)
+        const request = (indexedDB as IDBDatabase)
+          .transaction([browserStorage.storeName as string], "readonly")
+          .objectStore(browserStorage.storeName as string)
           .get(filename);
         const onError = (error: Event | Error) => {
           logger.error("load failed:", filename, error);
@@ -152,7 +148,7 @@ export class Storage {
         };
         request.onerror = onError;
         request.onsuccess = () => {
-          if (request.result?.blob) {
+          if (request.result.blob) {
             logger.debug("load success:", request.result);
             resolve(request.result.blob);
           } else {
@@ -169,15 +165,13 @@ export class Storage {
   async list(): Promise<string[]> {
     logger.debug("list called");
 
-    const _this = this;
-    if (this.options?.browserStorage && this.indexedDB) {
+    if (this.options.browserStorage && this.indexedDB) {
+      const browserStorage = this.options.browserStorage;
+      const indexedDB = this.indexedDB;
       return await new Promise((resolve, reject) => {
-        const request = (_this.indexedDB as IDBDatabase)
-          .transaction(
-            [_this.options.browserStorage?.storeName as string],
-            "readonly",
-          )
-          .objectStore(_this.options.browserStorage?.storeName as string)
+        const request = (indexedDB as IDBDatabase)
+          .transaction([browserStorage.storeName as string], "readonly")
+          .objectStore(browserStorage.storeName as string)
           .getAllKeys();
         request.onerror = (error) => {
           logger.error("list failed:", error);
@@ -197,15 +191,13 @@ export class Storage {
   async delete(filename: string): Promise<void> {
     logger.debug("delete called:", filename);
 
-    const _this = this;
-    if (this.options?.browserStorage && this.indexedDB) {
+    if (this.options.browserStorage && this.indexedDB) {
+      const browserStorage = this.options.browserStorage;
+      const indexedDB = this.indexedDB;
       return await new Promise((resolve, reject) => {
-        const request = (_this.indexedDB as IDBDatabase)
-          .transaction(
-            [_this.options.browserStorage?.storeName as string],
-            "readwrite",
-          )
-          .objectStore(_this.options.browserStorage?.storeName as string)
+        const request = (indexedDB as IDBDatabase)
+          .transaction([browserStorage.storeName as string], "readwrite")
+          .objectStore(browserStorage.storeName as string)
           .delete(filename);
         request.onerror = (error) => {
           logger.error("delete failed:", filename, error);
@@ -225,15 +217,13 @@ export class Storage {
   async clear(): Promise<void> {
     logger.debug("clear called");
 
-    const _this = this;
-    if (this.options?.browserStorage && this.indexedDB) {
+    if (this.options.browserStorage && this.indexedDB) {
+      const browserStorage = this.options.browserStorage;
+      const indexedDB = this.indexedDB;
       return await new Promise((resolve, reject) => {
-        const request = (_this.indexedDB as IDBDatabase)
-          .transaction(
-            [_this.options.browserStorage?.storeName as string],
-            "readwrite",
-          )
-          .objectStore(_this.options.browserStorage?.storeName as string)
+        const request = (indexedDB as IDBDatabase)
+          .transaction([browserStorage.storeName as string], "readwrite")
+          .objectStore(browserStorage.storeName as string)
           .clear();
         request.onerror = (error) => {
           logger.error("clear failed:", error);

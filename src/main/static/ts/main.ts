@@ -1,12 +1,17 @@
 import { Logger, LoggerConfig, LoggerConfigReload } from "./util/logger";
 import { getDeviceId } from "./util/device-id";
 import { getParameter, setParameter } from "./util/parameter";
-import { App } from "./app";
+import { ActivateOptions, App, AppOptions, Stats } from "./app";
 import { defaultOptions as defaultVideoOverlayOptions } from "./service/video-overlay";
 import { defaultOptions as defaultMotionDetectorOptions } from "./service/motion-detector";
 import { defaultOptions as defaultNoiseDetectorOptions } from "./service/noise-detector";
 import { defaultOptions as defaultNightVisionOptions } from "./service/night-vision";
 import { defaultOptions as defaultDeviceAccessOptions } from "./service/device-access";
+import { GoogleClient } from "./service/google/client";
+import { GoogleDrive } from "./service/google/drive";
+import { GoogleSheet } from "./service/google/sheet";
+import { Storage } from "./service/storage";
+import { Uploader } from "./service/uploader";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: Array<string>;
@@ -223,21 +228,138 @@ function getParameterOrSet<T>(key: string, t: T): T {
   return JSON.parse(param) as T;
 }
 
-function initApp() {
+export type GoogleSettings = Omit<
+  Parameters<GoogleClient["updateOptions"]>[0],
+  "renewTokenEvent" | "scopes" | "token"
+> & { configSheetId: string; configSheetRange: string };
+
+async function getConfigsFromGoogle(): Promise<{
+  googleClient?: GoogleClient;
+  appOptions?: AppOptions;
+  activateOptions?: ActivateOptions;
+  googleDriveUploadFolder?: string;
+  googleSheetStats?: { id: string; range: string };
+}> {
+  const configs: any = {};
+  const googleSettings = getParameterOrSet<GoogleSettings>(
+    "googleSettings",
+    {} as GoogleSettings,
+  );
+  if (googleSettings.clientId) {
+    const googleClient = new GoogleClient(googleSettings.clientId, [
+      "drive",
+      "spreadsheets",
+    ]);
+    configs.googleClient = googleClient;
+    googleClient.updateOptions({
+      login_hint: googleSettings.login_hint,
+      renewTokenEvent: (token) => {
+        setParameter("googleClientToken", JSON.stringify(token));
+      },
+      token: getParameterOrSet("googleClientToken", { bearer: "", expiry: 0 }),
+    });
+
+    const googleSheetConfigs = new GoogleSheet(
+      googleClient,
+      googleSettings.configSheetId,
+    );
+    const configsSheetData = await googleSheetConfigs.read(
+      googleSettings.configSheetRange,
+    );
+
+    configsSheetData.forEach(([k, v]) => {
+      const ks = k.split(".");
+      let obj = configs;
+      ks.forEach((k, idx) => {
+        if (idx == ks.length - 1) {
+          obj[k] = JSON.parse(v);
+        } else {
+          if (!obj[k]) {
+            obj[k] = {};
+          }
+          obj = obj[k];
+        }
+      });
+    });
+  }
+  return configs;
+}
+
+async function initApp() {
   initStaticElements();
 
-  let appOptions = getParameterOrSet<Parameters<App["updateOptions"]>[0]>(
-    "appOptions",
-    {
-      videoOverlay: { ...defaultVideoOverlayOptions, showStats: true },
-      motionDetector: defaultMotionDetectorOptions,
-      noiseDetector: defaultNoiseDetectorOptions,
-      nightVision: defaultNightVisionOptions,
-    },
-  );
-  let activateOptions = getParameterOrSet<
-    Omit<Parameters<App["activate"]>[0], "deviceId">
-  >("activateOptions", {
+  const storage = new Storage();
+  storage.init({
+    // TODO: background sync
+    // browserStorage: {
+    //   appName: "web-se-cam",
+    //   storeName: "recordings"
+    // }
+  });
+
+  let onSave = (filename: string, blob: Blob) => storage.save(filename, blob);
+  let onStats = async (stats: Stats) => {
+    logger.error("stats:", stats);
+  };
+
+  const uploadUrl = getParameter("uploadUrl");
+  if (uploadUrl) {
+    const uploader = new Uploader(uploadUrl);
+    uploader.updateOptions({ fallback: onSave });
+    onSave = (filename: string, blob: Blob) => uploader.post(filename, blob);
+  }
+
+  const configs = await getConfigsFromGoogle();
+  if (configs.appOptions) {
+    setParameter("appOptions", JSON.stringify(configs.appOptions));
+  }
+  if (configs.activateOptions) {
+    setParameter("activateOptions", JSON.stringify(configs.activateOptions));
+  }
+
+  let googleDrive: GoogleDrive | null = null;
+  let googleSheetStats: GoogleSheet | null = null;
+  if (configs.googleClient) {
+    googleDrive = new GoogleDrive(configs.googleClient);
+    if (configs.googleDriveUploadFolder) {
+      googleDrive.updateOptions({ parents: [configs.googleDriveUploadFolder] });
+    }
+    googleDrive.updateOptions({ fallback: onSave });
+    onSave = (filename: string, blob: Blob) =>
+      (googleDrive as GoogleDrive).upload(filename, blob);
+    if (configs.googleSheetStats) {
+      googleSheetStats = new GoogleSheet(
+        configs.googleClient,
+        configs.googleSheetStats.id,
+      );
+      const range = configs.googleSheetStats.range;
+      onStats = async (stats: Stats) => {
+        (googleSheetStats as GoogleSheet).append(range, [
+          [
+            stats.deviceTimestamp,
+            stats.status,
+            stats.batteryLevel,
+            stats.batteryCharging,
+            stats.batteryEta,
+            stats.frameCount,
+            stats.locationTimestamp,
+            stats.latitude,
+            stats.longitude,
+            stats.altitude,
+          ],
+        ]);
+      };
+    }
+  }
+
+  let appOptions = getParameterOrSet<AppOptions>("appOptions", {
+    videoOverlay: { ...defaultVideoOverlayOptions, showStats: true },
+    motionDetector: defaultMotionDetectorOptions,
+    noiseDetector: defaultNoiseDetectorOptions,
+    nightVision: defaultNightVisionOptions,
+  });
+  let activateOptions = getParameterOrSet<ActivateOptions>("activateOptions", {
+    deviceId: getDeviceId(),
     deviceAccess: defaultDeviceAccessOptions,
     continuousRecording: {
       videoBitsPerSecond: 128000,
@@ -250,24 +372,23 @@ function initApp() {
       preRollMs: 2000,
       interval: 60000,
       releaseMs: 3000,
-      triggers: ["MOTION", "NOISE"],
+      triggers: ["motion", "noise"],
     },
   });
 
-  const app = new App();
-  app.setAudioLevelListener(
-    (level) => (elements.audioLevelDiv.style.width = (level * 100) / 255 + "%"),
-  );
+  const audioLevelListener = (level: number) =>
+    (elements.audioLevelDiv.style.width = (level * 100) / 255 + "%");
   elements.audioThresholdDiv.style.width =
     ((appOptions.noiseDetector?.detectionThreshold ??
       defaultNoiseDetectorOptions.detectionThreshold) *
       100) /
       255 +
     "%";
+
+  const app = new App(onSave, onStats, audioLevelListener);
   const videoCanvas = app.getVideoCanvas();
   const motionCanvas = app.getMotionCanvas();
-  elements.videoPreviewDiv.appendChild(videoCanvas);
-  elements.videoPreviewDiv.appendChild(motionCanvas);
+  elements.videoPreviewDiv.append(videoCanvas, motionCanvas);
   motionCanvas.classList.add("motion");
   if (motionCanvas.checkVisibility === undefined) {
     // polyfill
@@ -288,10 +409,7 @@ function initApp() {
       activated = false;
     } else {
       logger.info("Activating...");
-      await app.activate({
-        deviceId: getDeviceId(),
-        ...activateOptions,
-      });
+      await app.activate(activateOptions);
       buttonElement.textContent = "Deactivate";
       activated = true;
     }

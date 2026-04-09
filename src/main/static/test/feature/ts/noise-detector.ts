@@ -13,11 +13,12 @@ async function happyPath() {
 <div style="position:absolute; top:2px; left:2px; bottom:2px; background:gray;"></div>\
 <div style="position:absolute; top:0px; left:2px; bottom:0px; border-right:2px dotted black;"></div> \
 </div>';
-  const levelStyle = (levelIndicator.firstChild?.firstChild as HTMLDivElement)
-    ?.style;
+  const levelStyle = (
+    (levelIndicator.firstChild as ChildNode).firstChild as HTMLDivElement
+  ).style;
   const thresholdStyle = (
-    levelIndicator.firstChild?.childNodes[1] as HTMLDivElement
-  )?.style;
+    (levelIndicator.firstChild as ChildNode).childNodes[1] as HTMLDivElement
+  ).style;
 
   const devices = new DeviceAccess();
   const noise = new NoiseDetector();
@@ -31,20 +32,16 @@ async function happyPath() {
   noise.addTrigger(trigger);
 
   if (app) {
-    app.appendChild(levelIndicator);
-    app.appendChild(triggerCounterElement);
+    app.append(levelIndicator, triggerCounterElement);
   }
 
-  devices.updateOptions({
+  const mediaStream = await devices.start({
+    video: { facingMode: "environment" },
     audio: {
       autoGainControl: false,
       echoCancellation: false,
       noiseSuppression: false,
     },
-  });
-  const mediaStream = await devices.start({
-    video: { facingMode: "environment" },
-    audio: {},
   });
   noise.setMediaStream(mediaStream);
 

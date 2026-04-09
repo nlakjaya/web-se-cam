@@ -14,7 +14,7 @@ export class VideoPipeline {
 
     const _this = this;
     function draw() {
-      if ((_this.videoElement.srcObject as MediaStream)?.active) {
+      if ((_this.videoElement.srcObject as MediaStream).active) {
         _this.ctx.drawImage(_this.videoElement, 0, 0);
         _this.layers.forEach((layer) => layer.draw(_this.ctx));
       }

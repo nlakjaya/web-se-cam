@@ -90,7 +90,7 @@ async function freeStorageSpace(
 
 async function fileUploadHandler(req: Request, res: Response) {
   const uploadStartTime = Date.now();
-  const fileName = req.headers["x-filename"]?.toString() as string;
+  const fileName = req.headers["x-filename"] as string;
   const contentLength = parseInt(req.headers["content-length"] as string);
   const sanitizedFilename = sanitizeFilename(fileName);
   const filePath = path.join(UPLOAD_PATH, sanitizedFilename);
@@ -194,7 +194,7 @@ async function googleDriveUploadHandler(
   res: Response,
 ) {
   const uploadStartTime = Date.now();
-  const fileName = req.headers["x-filename"]?.toString() as string;
+  const fileName = req.headers["x-filename"] as string;
   const contentLength = parseInt(req.headers["content-length"] as string);
   const contentType = req.headers["content-type"] as string;
   const sanitizedFilename = sanitizeFilename(fileName);
@@ -232,7 +232,7 @@ async function googleDriveUploadHandler(
 function validateRequest(req: Request, res: Response) {
   const contentLength = parseInt(req.headers["content-length"] || "0");
   const contentType = req.headers["content-type"];
-  const fileName = req.headers["x-filename"]?.toString();
+  const fileName = req.headers["x-filename"] as string;
 
   if (!(contentLength > 0 && contentType && fileName)) {
     console.error("Bad request: missing required headers:", {

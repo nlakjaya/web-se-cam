@@ -14,7 +14,7 @@ const app = document.getElementById("app");
 async function happyPath() {
   const gsiClient = new GoogleClient(gsiClientId, ["spreadsheets"]);
   gsiClient.updateOptions({
-    request: { prompt: "consent", login_hint },
+    login_hint,
     renewTokenEvent: (token) => {
       console.log("token:", token);
     },
@@ -24,15 +24,15 @@ async function happyPath() {
 
   const sheet = new GoogleSheet(gsiClient, googleSheetId);
 
-  const readValues = await sheet.read(googleSheetReadRange);
-  console.log(readValues);
-
   await sheet.append(googleSheetAppendRange, [
     ["test", `test-${Math.round(Math.random() * 1000)}`],
   ]);
 
+  const readValues = await sheet.read(googleSheetReadRange);
+  console.log(readValues);
+
   if (app) {
-    app.appendChild(document.createTextNode("Test Completed"));
+    app.append(document.createTextNode("Test Completed"));
   }
 }
 

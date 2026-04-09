@@ -44,7 +44,10 @@ export class GoogleSheet {
     }
   }
 
-  async append(range: string, values: string[][]) {
+  async append(
+    range: string,
+    values: (string | number | boolean | undefined)[][],
+  ) {
     logger.debug("append called:", range, values);
     try {
       const token = await this.options.gsiClient.getToken();

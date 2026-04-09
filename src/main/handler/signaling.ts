@@ -24,7 +24,7 @@ export function getHandlerSubscribe() {
 
     if (clients.has(clientId)) {
       console.error("ws client already exist and overriding:", clientId);
-      clients.get(clientId)?.close();
+      (clients.get(clientId) as WebSocket).close();
     } else if (clients.size == SIGNALLING_MAX_CLIENTS_COUNT) {
       console.error(
         "ws subscribe:",
@@ -46,8 +46,8 @@ export function getHandlerSubscribe() {
       try {
         const { recipientId, data } = JSON.parse(message.toString());
         if (recipientId && clients.has(recipientId)) {
-          const recipientWs = clients.get(recipientId);
-          if (recipientWs?.readyState === WebSocket.OPEN) {
+          const recipientWs = clients.get(recipientId) as WebSocket;
+          if (recipientWs.readyState === WebSocket.OPEN) {
             recipientWs.send(
               JSON.stringify({
                 from: clientId,

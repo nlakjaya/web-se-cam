@@ -30,7 +30,7 @@ async function happyPath() {
   recorder.start(new MediaRecorder({}, ...mediaStream.getTracks()));
 
   if (app) {
-    app.appendChild(videoElement);
+    app.append(videoElement);
   }
 
   await sleep(6000);
@@ -38,9 +38,7 @@ async function happyPath() {
   recorder.stop();
   videoElement.srcObject = null;
   devices.stop();
-  if (app) {
-    app.removeChild(videoElement);
-  }
+  videoElement.remove();
 }
 
 happyPath();
