@@ -95,7 +95,7 @@ export class App {
 
     this.sensor = new Sensor();
     this.startBatteryListener = true;
-    this.startGeoLocationListener = true;
+    this.startGeoLocationListener = false;
   }
 
   updateOptions(options: AppOptions) {
@@ -112,6 +112,7 @@ export class App {
     } else {
       this.statsInterval = undefined;
     }
+    // TODO: startBatteryListener startGeoLocationListener
   }
 
   getVideoCanvas() {
@@ -127,21 +128,20 @@ export class App {
       clearTimeout(this.statsTimeoutId);
       this.statsTimeoutId = undefined;
     }
-    const _this = this;
-    const sendStats = (stats?: Partial<Stats>) => {
-      const fullStats = {
-        status: _this.mediaStream ? "active" : "inactive",
-        ...stats,
-        deviceTimestamp: Date.now(),
-        frameCount: _this.videoStats.getFrameCount(),
-      };
-      logger.debug("sendStats:", fullStats);
-      _this.onStats(fullStats);
+    const fullStats = {
+      status: this.mediaStream ? "active" : "inactive",
+      ...stats,
+      deviceTimestamp: Date.now(),
+      frameCount: this.videoStats.getFrameCount(),
     };
+    logger.debug("sendStats:", fullStats);
+    this.onStats(fullStats);
     if (this.statsInterval) {
-      this.statsTimeoutId = setTimeout(sendStats, this.statsInterval);
+      this.statsTimeoutId = setTimeout(
+        () => this.sendStats(),
+        this.statsInterval,
+      );
     }
-    sendStats(stats);
   }
 
   private createMediaRecorder(
