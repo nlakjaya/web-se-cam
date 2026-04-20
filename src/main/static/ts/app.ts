@@ -127,20 +127,22 @@ export class App {
     if (this.statsTimeoutId) {
       clearTimeout(this.statsTimeoutId);
       this.statsTimeoutId = undefined;
+      // logger.debug("send stats schedule cancelled");
     }
-    const fullStats = {
+    const completeStats = {
       status: this.mediaStream ? "active" : "inactive",
       ...stats,
       deviceTimestamp: Date.now(),
       frameCount: this.videoStats.getFrameCount(),
     };
-    logger.debug("sendStats:", fullStats);
-    this.onStats(fullStats);
+    logger.debug("sendStats:", completeStats);
+    this.onStats(completeStats);
     if (this.statsInterval) {
       this.statsTimeoutId = setTimeout(
         () => this.sendStats(),
         this.statsInterval,
       );
+      // logger.debug("send stats scheduled in ms:", this.statsInterval);
     }
   }
 
@@ -157,30 +159,6 @@ export class App {
       ...this.videoPipeline.getCanvasElement().captureStream().getVideoTracks(),
       ...this.mediaStream.getAudioTracks(),
     );
-  }
-
-  private batteryEvents(battery: {
-    level?: number;
-    charging?: boolean;
-    eta?: number;
-  }) {
-    // TODO: battery based events
-    if (
-      this.mediaStream &&
-      ((battery.charging === false && (battery.level ?? 1) < 0.5) ||
-        (battery.charging === true &&
-          (battery.level ?? 1) < 0.2 &&
-          !battery.eta))
-    ) {
-      this.deactivate();
-    }
-    if (
-      battery.charging === true &&
-      (battery.level ?? 0) > 0.8 &&
-      battery.eta
-    ) {
-      // this.activate();
-    }
   }
 
   async activate(options: ActivateOptions) {
@@ -256,6 +234,9 @@ export class App {
         const trigger = (triggerType: string) => {
           if (this.triggerTimeoutId) {
             clearTimeout(this.triggerTimeoutId);
+            // logger.debug("trigger release schedule cancelled");
+          } else if (!this.mediaStream) {
+            return;
           } else {
             triggerRecorder.updateOptions({
               fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-${triggerType}%n`,
@@ -267,7 +248,8 @@ export class App {
             }
             this.sendStats({ status: triggerType });
           }
-          this.triggerTimeoutId = setTimeout(triggerRelease, releaseMs);
+          this.triggerTimeoutId = setTimeout(() => triggerRelease(), releaseMs);
+          // logger.debug("trigger release scheduled in ms:", releaseMs);
         };
         if (options.triggerRecording.triggers.includes("motion")) {
           this.motionDetector.addTrigger(() => trigger("motion"));
@@ -284,11 +266,12 @@ export class App {
     ) {
       this.sensor.setBatteryListener((battery) => {
         this.sendStats({
-          batteryLevel: battery.level,
-          batteryCharging: battery.charging,
+          ...(battery.level != undefined && { batteryLevel: battery.level }),
+          ...(battery.charging != undefined && {
+            batteryCharging: battery.charging,
+          }),
           batteryEta: battery.eta,
         });
-        this.batteryEvents(battery);
       });
       this.startBatteryListener = false;
     }
@@ -302,7 +285,10 @@ export class App {
           locationTimestamp: geolocation.timestamp,
           latitude: geolocation.latitude,
           longitude: geolocation.longitude,
-          altitude: geolocation.altitude ?? undefined,
+          // accuracy: geolocation.accuracy,
+          ...(geolocation.altitude !== null && {
+            altitude: geolocation.altitude,
+          }),
         }),
       );
       this.startGeoLocationListener = false;
@@ -310,6 +296,8 @@ export class App {
 
     this.videoStats.reset();
     this.sendStats();
+
+    // TODO: Wake lock
   }
 
   async deactivate() {
@@ -317,10 +305,13 @@ export class App {
     this.mediaStream = null;
     this.videoPipeline.clearCanvas();
     this.motionDetector.clearHistory();
+    this.motionDetector.removeTriggers();
+    this.noiseDetector.removeTriggers();
 
     if (this.triggerTimeoutId) {
       clearTimeout(this.triggerTimeoutId);
       this.triggerTimeoutId = null;
+      logger.debug("trigger release schedule cancelled");
       await this.triggerRecorder?.stop();
     } else {
       await this.continuousRecorder?.stop();
@@ -332,5 +323,6 @@ export class App {
     this.triggerRecorder = null;
 
     this.sendStats();
+    // TODO: Wake unlock
   }
 }

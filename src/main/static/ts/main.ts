@@ -237,7 +237,7 @@ async function getConfigsFromGoogle(): Promise<{
   googleClient?: GoogleClient;
   appOptions?: AppOptions;
   activateOptions?: ActivateOptions;
-  googleDriveUploadFolder?: string;
+  googleDriveUpload?: { enabled: boolean; parents: string[] };
   googleSheetStats?: { id: string; range: string };
 }> {
   const configs: any = {};
@@ -288,19 +288,30 @@ async function getConfigsFromGoogle(): Promise<{
 async function initApp() {
   initStaticElements();
 
+  let statsEvents = async (_stats: Stats) => {};
+  let pushStatsToGoogleSheet: (stats: Stats) => void = async (
+    _stats: Stats,
+  ) => {
+    throw new Error("no google sheet stats configs");
+  };
+  const onStats = async (stats: Stats) => {
+    statsEvents(stats);
+    try {
+      pushStatsToGoogleSheet(stats);
+    } catch (error) {
+      // TODO: save and background sync
+    }
+  };
+
   const storage = new Storage();
   storage.init({
-    // TODO: background sync
+    // TODO: save and background sync
     // browserStorage: {
     //   appName: "web-se-cam",
     //   storeName: "recordings"
     // }
   });
-
   let onSave = (filename: string, blob: Blob) => storage.save(filename, blob);
-  let onStats = async (stats: Stats) => {
-    logger.error("stats:", stats);
-  };
 
   const uploadUrl = getParameter("uploadUrl");
   if (uploadUrl) {
@@ -320,20 +331,28 @@ async function initApp() {
   let googleDrive: GoogleDrive | null = null;
   let googleSheetStats: GoogleSheet | null = null;
   if (configs.googleClient) {
-    googleDrive = new GoogleDrive(configs.googleClient);
-    if (configs.googleDriveUploadFolder) {
-      googleDrive.updateOptions({ parents: [configs.googleDriveUploadFolder] });
+    if (configs.googleDriveUpload && configs.googleDriveUpload.enabled) {
+      googleDrive = new GoogleDrive(configs.googleClient);
+      if (configs.googleDriveUpload.parents) {
+        googleDrive.updateOptions({
+          parents: configs.googleDriveUpload.parents,
+        });
+      }
+      googleDrive.updateOptions({ fallback: onSave });
+      onSave = (filename: string, blob: Blob) =>
+        (googleDrive as GoogleDrive).upload(filename, blob);
     }
-    googleDrive.updateOptions({ fallback: onSave });
-    onSave = (filename: string, blob: Blob) =>
-      (googleDrive as GoogleDrive).upload(filename, blob);
-    if (configs.googleSheetStats) {
+    if (
+      configs.googleSheetStats &&
+      configs.googleSheetStats.id &&
+      configs.googleSheetStats.range
+    ) {
       googleSheetStats = new GoogleSheet(
         configs.googleClient,
         configs.googleSheetStats.id,
       );
       const range = configs.googleSheetStats.range;
-      onStats = async (stats: Stats) => {
+      pushStatsToGoogleSheet = async (stats: Stats) => {
         (googleSheetStats as GoogleSheet).append(range, [
           [
             stats.deviceTimestamp,
@@ -404,7 +423,7 @@ async function initApp() {
     buttonElement.disabled = true;
     if (activated) {
       logger.info("Deactivating...");
-      app.deactivate();
+      await app.deactivate();
       buttonElement.textContent = "Activate";
       activated = false;
     } else {
@@ -429,18 +448,52 @@ async function initApp() {
     elements.showPreviewInput as HTMLInputElement
   ).checked;
 
-  initElement(
-    "autoActivateInput",
-    (element) => {
-      if ((element as HTMLInputElement).checked && !activated) {
-        elements.activateButton.click();
-      }
-    },
-    "autoActivate",
-    "false",
-  );
+  initElement("autoResumeInput", undefined, "autoResume", "false");
 
   logger.info("initialized");
+
+  const pause = async () => {
+    const buttonElement = elements.activateButton as HTMLButtonElement;
+    if (!buttonElement.disabled) {
+      buttonElement.disabled = true;
+      logger.info("Pausing (power-save)...");
+      await app.deactivate();
+      buttonElement.textContent = "Resume";
+      activated = false;
+    }
+  };
+  const resume = async () => {
+    const buttonElement = elements.activateButton as HTMLButtonElement;
+    const autoResumeInput = elements.autoResumeInput as HTMLInputElement;
+    if (!activated && autoResumeInput.checked) {
+      activated = true;
+      logger.info("Resuming (power-save)...");
+      buttonElement.textContent = "Deactivate";
+      await app.activate(activateOptions);
+    }
+    buttonElement.disabled = false;
+  };
+
+  let cumulativeStats: Partial<Stats> = {};
+  statsEvents = async (stats: Stats) => {
+    cumulativeStats = { ...cumulativeStats, ...stats };
+    if (
+      cumulativeStats.status == "active" &&
+      cumulativeStats.batteryLevel !== undefined &&
+      (cumulativeStats.batteryLevel < 0.2 ||
+        (cumulativeStats.batteryCharging === false &&
+          cumulativeStats.batteryLevel < 0.5))
+    ) {
+      pause();
+    } else if (
+      cumulativeStats.status == "inactive" &&
+      cumulativeStats.batteryCharging === true &&
+      cumulativeStats.batteryLevel !== undefined &&
+      cumulativeStats.batteryLevel > 0.5
+    ) {
+      resume();
+    }
+  };
 }
 
 function setupAppInstall(event: BeforeInstallPromptEvent) {

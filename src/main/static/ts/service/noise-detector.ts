@@ -85,6 +85,12 @@ export class NoiseDetector {
   }
 
   addTrigger(trigger: (instance: NoiseDetector) => void) {
+    logger.debug("addTrigger called:", trigger);
     this.triggers.push(trigger);
+  }
+
+  removeTriggers() {
+    logger.debug("removeTriggers called");
+    this.triggers = [];
   }
 }

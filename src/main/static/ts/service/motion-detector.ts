@@ -53,6 +53,11 @@ export class MotionDetector implements VideoLayer {
     this.triggers.push(trigger);
   }
 
+  removeTriggers() {
+    logger.debug("removeTriggers called");
+    this.triggers = [];
+  }
+
   clearHistory() {
     logger.debug("clearHistory called");
     this.previousFrame = undefined;

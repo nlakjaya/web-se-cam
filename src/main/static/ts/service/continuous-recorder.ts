@@ -48,7 +48,7 @@ export class ContinuousRecorder {
 
     let sequenceNo = 1;
     const now = new Date();
-    const rollover = async () => {
+    const rollover = () => {
       logger.debug("rollover called");
 
       if (this.mediaRecorder) {
@@ -91,12 +91,13 @@ export class ContinuousRecorder {
     this.mediaRecorder = mediaRecorder;
   }
 
-  async stop() {
+  stop() {
     logger.debug("stop called");
 
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
       this.timeoutId = undefined;
+      logger.debug("rollover schedule cancelled");
       if (this.mediaRecorder) {
         const currentFilename = this.currentFilename as string;
         this.mediaRecorder.stop().then((blob) => {

@@ -1,5 +1,6 @@
 import { Logger } from "../../util/logger";
-import { Storage } from "../storage";
+
+const CONSENT_TOKEN_RENEW_DELAY_MS = 1000;
 
 type Token = {
   bearer: string;
@@ -86,7 +87,7 @@ export class GoogleClient {
           } else if (response.error == "interaction_required") {
             setTimeout(() => {
               this.renewAccessToken("consent").then(resolve).catch(reject);
-            }, 0);
+            }, CONSENT_TOKEN_RENEW_DELAY_MS);
           } else {
             const errorMsg = "could not retreive access_token";
             logger.error(errorMsg, response);

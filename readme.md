@@ -1,8 +1,8 @@
 # Overview
 
-WebSeCam is a web based security camera applicaton,
+WebSeCam is a web based security camera application,
 that has standalone Frontend and self hostable Backend
-(optionally, infratrcutre-as-code on private cloud deployments).
+(optionally, infrastructure-as-code on private cloud deployments).
 
 ## Features
 
@@ -12,26 +12,26 @@ that has standalone Frontend and self hostable Backend
 - Loop Recording (Same or Different Quality)
 - Standalone Frontend (Optional Backend)
 - _TODO:_ Live View (Requires Backend)
-- _TODO:_ Alerts on Low Battery, Offline, Ambient Light Sensed etc. Events
+- _TODO:_ Alerts on Events such as Low Battery, Offline, Ambient Light Sensed etc.
 - _TODO:_ End-to-end Encryption
 
 ## Frontend (Web Application)
 
-- A PWA (Progrssive Web Application) running on each camera device (old smart phone, laptop, etc)
+- A PWA (Progressive Web Application) running on each camera device (old smart phone, laptop, etc)
 - Button to Activate/Deactivate both camera and microphone
 - Preview panel to see the web camera feed
 - Audio level indicator to show microphone activity
-- Control panel which configures features (extensible)
+- _TODO:_ Control panel which configures features (extensible)
   - Camera configuration
   - Microphone configuration
-  - Continous recording
+  - Continuous/Loop recording
   - Motion detection
   - Noise detection
   - _etc._
 
 ### TypeScript Modules
 
-- Componants
+- Components
   - Main
   - Test
 - Services
@@ -42,11 +42,11 @@ that has standalone Frontend and self hostable Backend
   - Motion Detector (Video Layer)
     - Prescaler (lower resolution buffer for faster processing)
     - Detection Threshold
-    - Motion Blur Strength (to avoid false detection due to noise and high frequency flikering)
+    - Motion Blur Strength (to avoid false detection due to noise and high frequency flickering)
     - _TODO:_ Mask
     - Preview
       - Motion Detection
-      - _TODO:_ Mask
+      - _TODO:_ Mask Editor
   - Noise Detector (Audio)
     - Detection Threshold
     - _TODO:_ Smoothing Strength
@@ -80,7 +80,7 @@ that has standalone Frontend and self hostable Backend
     - Start
     - Stop
     - Rollover
-  - Storage
+  - Storage (IndexedDB or Download)
     - Save File
     - Load File
     - Delete File
@@ -89,12 +89,16 @@ that has standalone Frontend and self hostable Backend
   - Upload
     - Set URL
     - _TODO:_ No of Retries
-    - Fallback to Storage
+    - Fallback (to Storage)
   - Stats (Heartbeat/Telemetry/Alerting)
     - Device ID
     - Timestamp
+    - Status
+      - Active
+      - Motion
+      - Noise
+      - Inactive
     - Frame Count
-    - _TODO:_ Events
     - Battery
       - Level
       - Charging State
@@ -107,7 +111,7 @@ that has standalone Frontend and self hostable Backend
 - Utils
   - Logger
     - Debug Logs
-    - Infomational Logs
+    - Informational Logs
     - Warning Logs
     - Error Logs
     - Hit Counter
