@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import * as fs from "fs";
 import path from "path";
-import { google } from "googleapis";
 import { PassThrough } from "stream";
-import { OAuth2Client } from "google-auth-library";
+import Google from "../service/google";
 
 const UPLOAD_PATH = process.env.UPLOAD_PATH || "./data/upload";
 const UPLOAD_STORAGE_QUOTA = process.env.UPLOAD_STORAGE_QUOTA
@@ -15,10 +14,6 @@ const UPLOAD_MAX_FILE_SIZE = process.env.UPLOAD_MAX_FILE_SIZE
 const UPLOAD_TIMEOUT = process.env.UPLOAD_TIMEOUT
   ? parseInt(process.env.UPLOAD_TIMEOUT)
   : 60 * 1000; // default is 60s
-
-const GOOGLE_APIS_CREDENTIALS_FILE = process.env.GOOGLE_APIS_CREDENTIALS_FILE;
-const GOOGLE_APIS_REFRESH_TOKEN = process.env.GOOGLE_APIS_REFRESH_TOKEN;
-const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
 function sanitizeFilename(filename: string): string {
   return path
@@ -170,55 +165,32 @@ async function fileUploadHandler(req: Request, res: Response) {
   );
 }
 
-function getAuthorization() {
-  if (!(GOOGLE_APIS_CREDENTIALS_FILE && GOOGLE_APIS_REFRESH_TOKEN)) {
-    return;
-  }
-
-  const keys = JSON.parse(
-    fs.readFileSync(GOOGLE_APIS_CREDENTIALS_FILE).toString(),
-  );
-  const auth = new google.auth.OAuth2(
-    keys.installed.client_id,
-    keys.installed.client_secret,
-    keys.installed.redirect_uris[0],
-  );
-  auth.on("tokens", (tokens) => console.error("Google APIs: Token refreshed"));
-  auth.setCredentials({ refresh_token: GOOGLE_APIS_REFRESH_TOKEN });
-  return auth;
-}
-
-async function googleDriveUploadHandler(
-  auth: OAuth2Client,
-  req: Request,
-  res: Response,
-) {
+async function googleDriveUploadHandler(req: Request, res: Response) {
   const uploadStartTime = Date.now();
   const fileName = req.headers["x-filename"] as string;
   const contentLength = parseInt(req.headers["content-length"] as string);
   const contentType = req.headers["content-type"] as string;
   const sanitizedFilename = sanitizeFilename(fileName);
 
-  const drive = google.drive({ version: "v3", auth });
   try {
     const stream = new PassThrough();
     req.pipe(stream);
 
-    const response = await drive.files.create({
-      requestBody: {
-        name: sanitizedFilename,
-        parents: GOOGLE_DRIVE_FOLDER_ID ? [GOOGLE_DRIVE_FOLDER_ID] : undefined,
-      },
-      media: {
-        mimeType: contentType,
-        body: stream,
-      },
-      fields: "id",
-    });
+    let id: string | undefined;
+    if (process.env.GOOGLE_DRIVE_FOLDER_ID) {
+      id = await Google.Drive.upload(
+        fileName,
+        contentType,
+        stream,
+        process.env.GOOGLE_DRIVE_FOLDER_ID,
+      );
+    } else {
+      id = await Google.Drive.upload(fileName, contentType, stream);
+    }
 
     const uploadDuration = Date.now() - uploadStartTime;
     console.log(
-      `Upload completed: Google Drive: ${response.data.id} (${contentLength} bytes in ${uploadDuration}ms)`,
+      `Upload completed: Google Drive: ${id} (${contentLength} bytes in ${uploadDuration}ms)`,
     );
     return res.status(201).json({ success: true });
   } catch (error) {
@@ -268,14 +240,13 @@ function validateRequest(req: Request, res: Response) {
 
 export function getHandlerUpload() {
   let handler: (req: Request, res: Response) => Promise<void>;
-  const googleApisAuth = getAuthorization();
-  if (googleApisAuth) {
+  if (process.env.GOOGLE_APIS_REFRESH_TOKEN) {
     console.log(
-      `Uploads will be saved in Google Drive: ${GOOGLE_DRIVE_FOLDER_ID ?? "root"}`,
+      `Uploads will be saved in Google Drive: ${process.env.GOOGLE_DRIVE_FOLDER_ID ?? "root"}`,
     );
     handler = async (req: Request, res: Response) => {
       if (!validateRequest(req, res)) return;
-      if (await googleDriveUploadHandler(googleApisAuth, req, res)) return;
+      if (await googleDriveUploadHandler(req, res)) return;
       fileUploadHandler(req, res);
     };
   } else {

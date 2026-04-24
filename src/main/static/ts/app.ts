@@ -28,7 +28,7 @@ export type AppOptions = {
   nightVision?: Parameters<NightVision["updateOptions"]>[0];
   motionDetector?: Parameters<MotionDetector["updateOptions"]>[0];
   noiseDetector?: Parameters<NoiseDetector["updateOptions"]>[0];
-  statsInterval?: number;
+  stats?: { interval?: number; battery?: boolean; geolocation?: boolean };
 };
 
 export type ActivateOptions = {
@@ -63,10 +63,14 @@ export class App {
   private triggerRecorder: ContinuousRecorder | null;
 
   private sensor: Sensor;
-  private startBatteryListener: boolean;
-  private startGeoLocationListener: boolean;
-  statsInterval?: number;
-  statsTimeoutId?: any;
+  private stats: {
+    interval?: number;
+    timeoutId?: any;
+    battery?: boolean;
+    geolocation?: boolean;
+  };
+
+  private wakeLock?: any;
 
   constructor(
     private onSave: (filename: string, blob: Blob) => void,
@@ -94,8 +98,13 @@ export class App {
     this.videoPipeline.addLayer(this.videoStats);
 
     this.sensor = new Sensor();
-    this.startBatteryListener = true;
-    this.startGeoLocationListener = false;
+    this.stats = { battery: false, geolocation: false };
+
+    document.addEventListener("visibilitychange", async () => {
+      if (this.wakeLock && document.visibilityState == "visible") {
+        await this.requestWakeLock();
+      }
+    });
   }
 
   updateOptions(options: AppOptions) {
@@ -107,12 +116,15 @@ export class App {
       this.motionDetector.updateOptions(options.motionDetector);
     if (options.noiseDetector)
       this.noiseDetector.updateOptions(options.noiseDetector);
-    if (options.statsInterval) {
-      this.statsInterval = options.statsInterval;
-    } else {
-      this.statsInterval = undefined;
+    if (options.stats) {
+      this.stats.interval = options.stats.interval || undefined;
+      if (options.stats.battery !== undefined) {
+        this.stats.battery = options.stats.battery || false;
+      }
+      if (options.stats.geolocation !== undefined) {
+        this.stats.geolocation = options.stats.geolocation || false;
+      }
     }
-    // TODO: startBatteryListener startGeoLocationListener
   }
 
   getVideoCanvas() {
@@ -124,9 +136,9 @@ export class App {
   }
 
   private sendStats(stats?: Partial<Stats>) {
-    if (this.statsTimeoutId) {
-      clearTimeout(this.statsTimeoutId);
-      this.statsTimeoutId = undefined;
+    if (this.stats.timeoutId) {
+      clearTimeout(this.stats.timeoutId);
+      this.stats.timeoutId = undefined;
       // logger.debug("send stats schedule cancelled");
     }
     const completeStats = {
@@ -137,10 +149,10 @@ export class App {
     };
     logger.debug("sendStats:", completeStats);
     this.onStats(completeStats);
-    if (this.statsInterval) {
-      this.statsTimeoutId = setTimeout(
+    if (this.stats.interval) {
+      this.stats.timeoutId = setTimeout(
         () => this.sendStats(),
-        this.statsInterval,
+        this.stats.interval,
       );
       // logger.debug("send stats scheduled in ms:", this.statsInterval);
     }
@@ -260,10 +272,7 @@ export class App {
       }
     }
 
-    if (
-      this.startBatteryListener &&
-      (await this.sensor.isSupported("Battery"))
-    ) {
+    if (this.stats.battery && (await this.sensor.isSupported("Battery"))) {
       this.sensor.setBatteryListener((battery) => {
         this.sendStats({
           ...(battery.level != undefined && { batteryLevel: battery.level }),
@@ -273,11 +282,11 @@ export class App {
           batteryEta: battery.eta,
         });
       });
-      this.startBatteryListener = false;
+      this.stats.battery = undefined;
     }
 
     if (
-      this.startGeoLocationListener &&
+      this.stats.geolocation &&
       (await this.sensor.isSupported("Geolocation"))
     ) {
       this.sensor.setGeolocationListener((geolocation) =>
@@ -291,13 +300,12 @@ export class App {
           }),
         }),
       );
-      this.startGeoLocationListener = false;
+      this.stats.geolocation = undefined;
     }
 
     this.videoStats.reset();
     this.sendStats();
-
-    // TODO: Wake lock
+    this.requestWakeLock();
   }
 
   async deactivate() {
@@ -312,9 +320,9 @@ export class App {
       clearTimeout(this.triggerTimeoutId);
       this.triggerTimeoutId = null;
       logger.debug("trigger release schedule cancelled");
-      await this.triggerRecorder?.stop();
+      this.triggerRecorder?.stop();
     } else {
-      await this.continuousRecorder?.stop();
+      this.continuousRecorder?.stop();
       await this.triggerMediaRecorder?.stop();
     }
     this.continuousMediaRecorder = null;
@@ -323,6 +331,25 @@ export class App {
     this.triggerRecorder = null;
 
     this.sendStats();
-    // TODO: Wake unlock
+    this.releaseWakeLock();
+  }
+
+  async requestWakeLock() {
+    try {
+      this.wakeLock = await navigator.wakeLock.request("screen");
+      this.wakeLock.addEventListener("release", (event: Event) => {
+        logger.debug("wake lock: released:", event);
+      });
+      logger.debug("wake lock: acquired");
+    } catch (error) {
+      logger.error("wake lock: error", error);
+    }
+  }
+
+  async releaseWakeLock() {
+    if (this.wakeLock) {
+      await this.wakeLock.release();
+      this.wakeLock = undefined;
+    }
   }
 }

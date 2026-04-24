@@ -87,6 +87,7 @@ export class Storage {
     }
   }
 
+  // TODO: Stream instead of Blob
   async save(filename: string, blob: Blob): Promise<void> {
     logger.debug("save called:", filename, blob);
 
