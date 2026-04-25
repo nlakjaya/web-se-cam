@@ -289,17 +289,35 @@ async function initApp() {
   initStaticElements();
 
   let statsEvents = async (_stats: Stats) => {};
-  let pushStatsToGoogleSheet: (stats: Stats) => void = async (
+  let pushStatsToGoogleSheet: (...stats: Stats[]) => void = async (
     _stats: Stats,
   ) => {
     throw new Error("no google sheet stats configs");
   };
+  const statsStorage = new Storage();
+  statsStorage.init({
+    noDownload: true,
+    browserStorage: { appName: "web-se-cam", storeName: "stats" },
+  });
   const onStats = async (stats: Stats) => {
     statsEvents(stats);
     try {
-      pushStatsToGoogleSheet(stats);
+      const statsQueue: Stats[] = [];
+      if ((await statsStorage.getStorageInfo()).quota) {
+        const queue = await statsStorage.list();
+        for (const item of queue) {
+          const blob = await statsStorage.load(item);
+          statsQueue.push(JSON.parse(await blob.text()));
+        }
+      }
+      await pushStatsToGoogleSheet(...statsQueue, stats);
+      statsStorage.clear();
     } catch (error) {
-      // TODO: save and background sync
+      logger.error("google sheet stats: ", error);
+      statsStorage.save(
+        `${stats.deviceTimestamp}.stats`,
+        new Blob([JSON.stringify(stats)], { type: "text/plain" }),
+      );
     }
   };
 
@@ -352,9 +370,10 @@ async function initApp() {
         configs.googleSheetStats.id,
       );
       const range = configs.googleSheetStats.range;
-      pushStatsToGoogleSheet = async (stats: Stats) => {
-        (googleSheetStats as GoogleSheet).append(range, [
-          [
+      pushStatsToGoogleSheet = async (...stats: Stats[]) =>
+        (googleSheetStats as GoogleSheet).append(
+          range,
+          stats.map((stats) => [
             stats.deviceTimestamp,
             stats.status,
             stats.batteryLevel,
@@ -365,9 +384,8 @@ async function initApp() {
             stats.latitude,
             stats.longitude,
             stats.altitude,
-          ],
-        ]);
-      };
+          ]),
+        );
     }
   }
 
