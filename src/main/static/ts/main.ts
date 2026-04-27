@@ -7,9 +7,7 @@ import { defaultOptions as defaultMotionDetectorOptions } from "./service/motion
 import { defaultOptions as defaultNoiseDetectorOptions } from "./service/noise-detector";
 import { defaultOptions as defaultNightVisionOptions } from "./service/night-vision";
 import { defaultOptions as defaultDeviceAccessOptions } from "./service/device-access";
-import { GoogleClient } from "./service/google/client";
-import { GoogleDrive } from "./service/google/drive";
-import { GoogleSheet } from "./service/google/sheet";
+import { Google } from "./service/google";
 import { Storage } from "./service/storage";
 import { Uploader } from "./service/uploader";
 
@@ -229,12 +227,11 @@ function getParameterOrSet<T>(key: string, t: T): T {
 }
 
 export type GoogleSettings = Omit<
-  Parameters<GoogleClient["updateOptions"]>[0],
+  Parameters<(typeof Google)["updateOptions"]>[0],
   "renewTokenEvent" | "scopes" | "token"
 > & { configSheetId: string; configSheetRange: string };
 
 async function getConfigsFromGoogle(): Promise<{
-  googleClient?: GoogleClient;
   appOptions?: AppOptions;
   activateOptions?: ActivateOptions;
   googleDriveUpload?: { enabled: boolean; parents: string[] };
@@ -246,12 +243,9 @@ async function getConfigsFromGoogle(): Promise<{
     {} as GoogleSettings,
   );
   if (googleSettings.clientId) {
-    const googleClient = new GoogleClient(googleSettings.clientId, [
-      "drive",
-      "spreadsheets",
-    ]);
-    configs.googleClient = googleClient;
-    googleClient.updateOptions({
+    Google.updateOptions({
+      scopes: ["drive", "spreadsheets"],
+      clientId: googleSettings.clientId,
       login_hint: googleSettings.login_hint,
       renewTokenEvent: (token) => {
         setParameter("googleClientToken", JSON.stringify(token));
@@ -259,11 +253,8 @@ async function getConfigsFromGoogle(): Promise<{
       token: getParameterOrSet("googleClientToken", { bearer: "", expiry: 0 }),
     });
 
-    const googleSheetConfigs = new GoogleSheet(
-      googleClient,
+    const configsSheetData = await Google.Sheet.read(
       googleSettings.configSheetId,
-    );
-    const configsSheetData = await googleSheetConfigs.read(
       googleSettings.configSheetRange,
     );
 
@@ -346,32 +337,25 @@ async function initApp() {
     setParameter("activateOptions", JSON.stringify(configs.activateOptions));
   }
 
-  let googleDrive: GoogleDrive | null = null;
-  let googleSheetStats: GoogleSheet | null = null;
-  if (configs.googleClient) {
+  if (configs) {
     if (configs.googleDriveUpload && configs.googleDriveUpload.enabled) {
-      googleDrive = new GoogleDrive(configs.googleClient);
-      if (configs.googleDriveUpload.parents) {
-        googleDrive.updateOptions({
-          parents: configs.googleDriveUpload.parents,
-        });
-      }
-      googleDrive.updateOptions({ fallback: onSave });
+      const parents = configs.googleDriveUpload.parents;
+      const fallback = onSave;
       onSave = (filename: string, blob: Blob) =>
-        (googleDrive as GoogleDrive).upload(filename, blob);
+        Google.Drive.upload(filename, blob, ...parents).catch(() =>
+          fallback(filename, blob),
+        );
     }
     if (
       configs.googleSheetStats &&
       configs.googleSheetStats.id &&
       configs.googleSheetStats.range
     ) {
-      googleSheetStats = new GoogleSheet(
-        configs.googleClient,
-        configs.googleSheetStats.id,
-      );
+      const sheetId = configs.googleSheetStats.id;
       const range = configs.googleSheetStats.range;
       pushStatsToGoogleSheet = async (...stats: Stats[]) =>
-        (googleSheetStats as GoogleSheet).append(
+        Google.Sheet.append(
+          sheetId,
           range,
           stats.map((stats) => [
             stats.deviceTimestamp,

@@ -1,32 +1,27 @@
-import { GoogleClient } from "../../../ts/service/google/client";
-import { GoogleDrive } from "../../../ts/service/google/drive";
+import { Google } from "../../../ts/service/google";
 import { sleep } from "../../ts/base";
 
 // Important: Fill these before testing
-const gsiClientId = "";
+const clientId = "";
 const login_hint = "";
-const googleDriveFolderId = "";
+const googleDriveUploadParents: string[] = [];
 
 const app = document.getElementById("app");
 
 async function happyPath() {
-  const gsiClient = new GoogleClient(gsiClientId, ["drive"]);
-  gsiClient.updateOptions({
+  Google.updateOptions({
+    clientId,
+    scopes: ["drive"],
     login_hint,
     renewTokenEvent: (token: any) => {
       console.log("token:", token);
     },
   });
 
-  (window as any).gsiClient = gsiClient; // for debugging
-
-  const drive = new GoogleDrive(gsiClient);
-  drive.updateOptions({
-    parents: [googleDriveFolderId],
-  });
-  await drive.upload(
+  await Google.Drive.upload(
     "google-drive-test-file",
     new Blob(["test"], { type: "video/plain" }),
+    ...googleDriveUploadParents,
   );
 
   if (app) {

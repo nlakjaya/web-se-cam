@@ -1,34 +1,33 @@
-import { GoogleClient } from "../../../ts/service/google/client";
-import { GoogleSheet } from "../../../ts/service/google/sheet";
+import { Google } from "../../../ts/service/google";
 import { sleep } from "../../ts/base";
 
 // Important: Fill these before testing
-const gsiClientId = "";
+const clientId = "";
 const login_hint = "";
 const googleSheetId = "";
-const googleSheetReadRange = "Sheet1!A1:B";
-const googleSheetAppendRange = "Sheet1!A1";
+const googleSheetReadRange = "test!A1:B";
+const googleSheetAppendRange = "test!A1";
 
 const app = document.getElementById("app");
 
 async function happyPath() {
-  const gsiClient = new GoogleClient(gsiClientId, ["spreadsheets"]);
-  gsiClient.updateOptions({
+  Google.updateOptions({
+    clientId,
+    scopes: ["spreadsheets"],
     login_hint,
-    renewTokenEvent: (token) => {
+    renewTokenEvent: (token: any) => {
       console.log("token:", token);
     },
   });
 
-  (window as any).gsiClient = gsiClient; // for debugging
-
-  const sheet = new GoogleSheet(gsiClient, googleSheetId);
-
-  await sheet.append(googleSheetAppendRange, [
+  await Google.Sheet.append(googleSheetId, googleSheetAppendRange, [
     ["test", `test-${Math.round(Math.random() * 1000)}`],
   ]);
 
-  const readValues = await sheet.read(googleSheetReadRange);
+  const readValues = await Google.Sheet.read(
+    googleSheetId,
+    googleSheetReadRange,
+  );
   console.log(readValues);
 
   if (app) {
