@@ -29,7 +29,9 @@ export class MotionDetector implements VideoLayer {
 
   constructor() {
     const canvasElement = document.createElement("canvas");
-    this.ctx = canvasElement.getContext("2d") as CanvasRenderingContext2D;
+    this.ctx = canvasElement.getContext("2d", {
+      willReadFrequently: true,
+    }) as CanvasRenderingContext2D;
 
     this.options = defaultOptions;
     this.originalWidth = 640;
