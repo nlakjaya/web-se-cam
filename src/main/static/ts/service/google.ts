@@ -1,13 +1,9 @@
 import { Logger } from "../util/logger";
 import { GoogleDrive } from "./google/drive";
 import { GoogleSheet } from "./google/sheet";
+import { GoogleToken as Token } from "./google/types";
 
 const TOKEN_RENEW_WITH_CONSENT_DELAY_MS = 1000;
-
-type Token = {
-  bearer: string;
-  expiry: number;
-};
 
 type Options = {
   scopes?: ("drive" | "spreadsheets")[];
@@ -79,6 +75,11 @@ class GoogleClient {
       this.initPromise = undefined;
     }
     return new Promise<Token>((resolve, reject) => {
+      const retryWithConsent = () =>
+        setTimeout(() => {
+          this.options.prompt = "consent";
+          this.renewAccessToken().then(resolve).catch(reject);
+        }, TOKEN_RENEW_WITH_CONSENT_DELAY_MS);
       const tokenClient = (
         window as any
       ).google.accounts.oauth2.initTokenClient({
@@ -103,13 +104,20 @@ class GoogleClient {
             response.error == "interaction_required" &&
             this.options.prompt === undefined
           ) {
-            return setTimeout(() => {
-              this.options.prompt = "consent";
-              this.renewAccessToken().then(resolve).catch(reject);
-            }, TOKEN_RENEW_WITH_CONSENT_DELAY_MS);
+            logger.debug("interaction_required: retrying with consent");
+            return retryWithConsent();
           }
           const errorMsg = "could not retreive access_token";
           logger.error(errorMsg, response);
+          return reject(new Error(errorMsg));
+        },
+        error_callback: (error: any) => {
+          if (this.options.prompt === undefined) {
+            logger.debug("error_callback: retrying with consent");
+            return retryWithConsent();
+          }
+          const errorMsg = "error in authentication";
+          logger.error(errorMsg, error);
           return reject(new Error(errorMsg));
         },
       });

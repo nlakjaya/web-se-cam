@@ -1,11 +1,11 @@
 import { google, sheets_v4 } from "googleapis";
-import Google from "../google";
+import { GoogleClass } from "./types";
 
 export class Sheet {
-  constructor(private client: typeof Google) {}
+  constructor(private google: GoogleClass) {}
 
   private async getSheets(): Promise<sheets_v4.Sheets> {
-    const auth = await this.client.getAuthorization();
+    const auth = await this.google.getAuthorization();
     return google.sheets({ version: "v4", auth });
   }
 

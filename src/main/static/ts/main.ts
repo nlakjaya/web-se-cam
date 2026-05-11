@@ -329,48 +329,53 @@ async function initApp() {
     onSave = (filename: string, blob: Blob) => uploader.post(filename, blob);
   }
 
-  const configs = await getConfigsFromGoogle();
-  if (configs.appOptions) {
-    setParameter("appOptions", JSON.stringify(configs.appOptions));
-  }
-  if (configs.activateOptions) {
-    setParameter("activateOptions", JSON.stringify(configs.activateOptions));
-  }
+  try {
+    const configs = await getConfigsFromGoogle();
+    if (configs.appOptions) {
+      setParameter("appOptions", JSON.stringify(configs.appOptions));
+    }
+    if (configs.activateOptions) {
+      setParameter("activateOptions", JSON.stringify(configs.activateOptions));
+    }
 
-  if (configs) {
-    if (configs.googleDriveUpload && configs.googleDriveUpload.enabled) {
-      const parents = configs.googleDriveUpload.parents;
-      const fallback = onSave;
-      onSave = (filename: string, blob: Blob) =>
-        Google.Drive.upload(filename, blob, ...parents).catch(() =>
-          fallback(filename, blob),
-        );
+    if (configs) {
+      if (configs.googleDriveUpload && configs.googleDriveUpload.enabled) {
+        const parents = configs.googleDriveUpload.parents;
+        const fallback = onSave;
+        onSave = (filename: string, blob: Blob) =>
+          Google.Drive.upload(filename, blob, ...parents).catch(() =>
+            fallback(filename, blob),
+          );
+      }
+      if (
+        configs.googleSheetStats &&
+        configs.googleSheetStats.id &&
+        configs.googleSheetStats.range
+      ) {
+        const sheetId = configs.googleSheetStats.id;
+        const range = configs.googleSheetStats.range;
+        pushStatsToGoogleSheet = async (...stats: Stats[]) =>
+          Google.Sheet.append(
+            sheetId,
+            range,
+            stats.map((stats) => [
+              stats.deviceTimestamp,
+              stats.status,
+              stats.batteryLevel,
+              stats.batteryCharging,
+              stats.batteryEta,
+              stats.frameCount,
+              stats.locationTimestamp,
+              stats.latitude,
+              stats.longitude,
+              stats.altitude,
+            ]),
+          );
+      }
     }
-    if (
-      configs.googleSheetStats &&
-      configs.googleSheetStats.id &&
-      configs.googleSheetStats.range
-    ) {
-      const sheetId = configs.googleSheetStats.id;
-      const range = configs.googleSheetStats.range;
-      pushStatsToGoogleSheet = async (...stats: Stats[]) =>
-        Google.Sheet.append(
-          sheetId,
-          range,
-          stats.map((stats) => [
-            stats.deviceTimestamp,
-            stats.status,
-            stats.batteryLevel,
-            stats.batteryCharging,
-            stats.batteryEta,
-            stats.frameCount,
-            stats.locationTimestamp,
-            stats.latitude,
-            stats.longitude,
-            stats.altitude,
-          ]),
-        );
-    }
+  } catch (error) {
+    logger.error("Google integration: failed");
+    alert("Google integration: failed!\n\nContinue local only?")
   }
 
   let appOptions = getParameterOrSet<AppOptions>("appOptions", {

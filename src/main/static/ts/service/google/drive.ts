@@ -1,9 +1,9 @@
 import { Logger } from "../../util/logger";
-import { Google } from "../google";
+import { GoogleClass } from "./types";
 
 const logger = new Logger("GoogleDrive");
 export class GoogleDrive {
-  constructor(private google: typeof Google) {
+  constructor(private google: GoogleClass) {
     logger.debug("instance created");
   }
 
