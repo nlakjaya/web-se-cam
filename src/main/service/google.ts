@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import * as fs from "node:fs";
 import { authenticate } from "@google-cloud/local-auth";
 import { google } from "googleapis";
 import { OAuth2Client } from "google-auth-library";

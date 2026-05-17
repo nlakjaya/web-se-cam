@@ -8,7 +8,7 @@ type Options<T> = {
 
 const logger = new Logger("Signaling");
 export class Signaling<R, T> {
-  private ws: WebSocket;
+  private readonly ws: WebSocket;
   private options: Options<R>;
 
   constructor(clientId: string, options: Options<R>) {

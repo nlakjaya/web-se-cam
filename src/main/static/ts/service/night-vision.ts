@@ -25,6 +25,7 @@ export class NightVision implements VideoLayer {
     logger.debug("instance created");
   }
 
+  // TODO: Test Performance
   updateOptions(options: Partial<Options>) {
     logger.debug("updateOptions called:", options);
     this.options = {

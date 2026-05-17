@@ -3,11 +3,10 @@ import { VideoLayer } from "./video-pipeline";
 
 const logger = new Logger("VideoStats");
 export class VideoStats implements VideoLayer {
-  private frameCount: number;
+  private frameCount: number = 0;
   private frameTimestamps: Float64Array;
 
   constructor(fpsSmoothness = 3) {
-    this.frameCount = 0;
     this.frameTimestamps = new Float64Array(fpsSmoothness);
 
     logger.debug("instance created");

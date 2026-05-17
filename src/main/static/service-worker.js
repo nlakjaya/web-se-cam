@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
   "js/script.js",
 ];
 
-const sw = self; // as ServiceWorkerGlobalScope;
+const sw = globalThis; // as ServiceWorkerGlobalScope;
 const logger = { debug: console.log };
 
 async function cacheFirst(event) {

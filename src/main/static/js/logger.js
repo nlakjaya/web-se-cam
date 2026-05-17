@@ -40,18 +40,21 @@ export function LoggerConfigReload() {
       LOGGER.timeEnd = (service, label) => {
         console.timeEnd([" PERF", service, label].join(" "));
       };
+    // fall through
     case "INFO":
       LOGGER.info = (service, ...messages) => {
         LoggerConfig.subscribers.forEach((subscriber) =>
           subscriber(" INFO:", service, ...messages),
         );
       };
+    // fall through
     case "WARN":
       LOGGER.warn = (service, ...messages) => {
         LoggerConfig.subscribers.forEach((subscriber) =>
           subscriber(" WARN:", service, ...messages),
         );
       };
+    // fall through
     case "ERROR":
       break;
     default:

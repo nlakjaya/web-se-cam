@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import * as fs from "fs";
-import { dirname } from "path";
+import * as fs from "node:fs";
+import { dirname } from "node:path";
 
 const STATS_FIELDS =
   process.env.STATS_FIELDS ||
@@ -24,9 +24,9 @@ export function getHandlerStats() {
   return async (req: Request, res: Response) => {
     const statsRecord = Object.fromEntries(
       statFields.map((field) =>
-        req.body[field] !== undefined
-          ? [field, req.body[field]]
-          : [field, null],
+        req.body[field] === undefined
+          ? [field, null]
+          : [field, req.body[field]],
       ),
     );
     const csvRow = Object.values(statsRecord).join(",");

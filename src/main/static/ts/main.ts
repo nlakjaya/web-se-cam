@@ -42,73 +42,75 @@ function initElement(
 ): HTMLElement | undefined {
   const element = document.getElementById(elementId);
   if (element) {
+    const initButtonElement = () => {
+      const buttonElement = element as HTMLButtonElement;
+      buttonElement.disabled = false;
+      if (action) {
+        element.addEventListener("click", (event) => {
+          action(element, event);
+        });
+      }
+    };
+    const initInputElement = () => {
+      const inputElement = element as HTMLInputElement;
+      inputElement.disabled = false;
+      if (parameterKey) {
+        element.addEventListener("change", (event) => {
+          setParameter(parameterKey, `${inputElement.checked}`);
+        });
+        if (defaultValue) {
+          switch (inputElement.type) {
+            case "checkbox":
+              inputElement.checked =
+                getParameter(parameterKey, defaultValue) == "true";
+              break;
+            default:
+              inputElement.value = getParameter(parameterKey, defaultValue);
+          }
+        }
+      }
+      if (action) {
+        action(element, new Event("change"));
+        element.addEventListener("change", (event) => {
+          action(element, event);
+        });
+      }
+    };
+    const initSelectElement = () => {
+      const selectElement = element as HTMLSelectElement;
+      selectElement.disabled = false;
+      if (parameterKey) {
+        element.addEventListener("change", (event) => {
+          setParameter(parameterKey, `${selectElement.value}`);
+        });
+        if (defaultValue) {
+          selectElement.value = getParameter(parameterKey, defaultValue);
+        }
+      }
+      if (action) {
+        action(element, new Event("change"));
+        element.addEventListener("change", (event) => {
+          action(element, event);
+        });
+      }
+    };
     elements[elementId] = element;
     switch (element.nodeName) {
       case "BUTTON": {
-        const buttonElement = element as HTMLButtonElement;
-        buttonElement.disabled = false;
-        if (action) {
-          element.addEventListener("click", (event) => {
-            action(element, event);
-          });
-        }
+        initButtonElement();
         return element;
       }
       case "INPUT": {
-        const inputElement = element as HTMLInputElement;
-        inputElement.disabled = false;
-        if (parameterKey) {
-          element.addEventListener("change", (event) => {
-            setParameter(parameterKey, `${inputElement.checked}`);
-          });
-          if (defaultValue) {
-            switch (inputElement.type) {
-              case "checkbox":
-                inputElement.checked =
-                  getParameter(parameterKey, defaultValue) == "true";
-                break;
-              default:
-                inputElement.value = getParameter(
-                  parameterKey,
-                  defaultValue,
-                ) as string;
-            }
-          }
-        }
-        if (action) {
-          action(element, new Event("change"));
-          element.addEventListener("change", (event) => {
-            action(element, event);
-          });
-        }
+        initInputElement();
         return element;
       }
       case "SELECT": {
-        const selectElement = element as HTMLSelectElement;
-        selectElement.disabled = false;
-        if (parameterKey) {
-          element.addEventListener("change", (event) => {
-            setParameter(parameterKey, `${selectElement.value}`);
-          });
-          if (defaultValue) {
-            selectElement.value = getParameter(
-              parameterKey,
-              defaultValue,
-            ) as string;
-          }
-        }
-        if (action) {
-          action(element, new Event("change"));
-          element.addEventListener("change", (event) => {
-            action(element, event);
-          });
-        }
+        initSelectElement();
         return element;
       }
     }
     return element;
   }
-  return;
 }
 
 function initStaticElements() {
@@ -172,17 +174,19 @@ function initStaticElements() {
   elements.screenLockThumbDiv.addEventListener("pointermove", (event) => {
     if (!screenLockStates.isDragging) return;
     const dX = event.clientX - screenLockStates.startX;
+    const parentElement = elements.screenLockThumbDiv.parentElement;
+    if (!parentElement) return;
     const dOffset =
-      (elements.screenLockThumbDiv.parentElement as HTMLElement).offsetWidth -
-      elements.screenLockThumbDiv.offsetWidth;
+      parentElement.offsetWidth - elements.screenLockThumbDiv.offsetWidth;
     screenLockStates.currentX = Math.max(0, Math.min(dX, dOffset));
     elements.screenLockThumbDiv.style.transform = `translateX(${screenLockStates.currentX}px)`;
   });
   elements.screenLockThumbDiv.addEventListener("pointerup", () => {
     screenLockStates.isDragging = false;
+    const parentElement = elements.screenLockThumbDiv.parentElement;
+    if (!parentElement) return;
     const dOffset =
-      (elements.screenLockThumbDiv.parentElement as HTMLElement).offsetWidth -
-      elements.screenLockThumbDiv.offsetWidth;
+      parentElement.offsetWidth - elements.screenLockThumbDiv.offsetWidth;
     if (screenLockStates.currentX >= dOffset * 0.95) {
       unlockScreen();
     } else {
@@ -195,9 +199,9 @@ function initStaticElements() {
     elements.screenLockThumbDiv.style.transform = "translateX(0)";
   });
 
-  if ("beforeInstallPromptEvent" in window) {
-    setupAppInstall((window as any).beforeInstallPromptEvent);
-    window.addEventListener("beforeinstallprompt", (event) =>
+  if ("beforeInstallPromptEvent" in globalThis) {
+    setupAppInstall((globalThis as any).beforeInstallPromptEvent);
+    globalThis.addEventListener("beforeinstallprompt", (event) =>
       setupAppInstall(event as BeforeInstallPromptEvent),
     );
   }
@@ -280,7 +284,7 @@ async function initApp() {
   initStaticElements();
 
   let statsEvents = async (_stats: Stats) => {};
-  let pushStatsToGoogleSheet: (...stats: Stats[]) => void = async (
+  let pushStatsToGoogleSheet: (...stats: Stats[]) => Promise<void> = async (
     _stats: Stats,
   ) => {
     throw new Error("no google sheet stats configs");
@@ -339,7 +343,7 @@ async function initApp() {
     }
 
     if (configs) {
-      if (configs.googleDriveUpload && configs.googleDriveUpload.enabled) {
+      if (configs.googleDriveUpload?.enabled) {
         const parents = configs.googleDriveUpload.parents;
         const fallback = onSave;
         onSave = (filename: string, blob: Blob) =>
@@ -347,11 +351,7 @@ async function initApp() {
             fallback(filename, blob),
           );
       }
-      if (
-        configs.googleSheetStats &&
-        configs.googleSheetStats.id &&
-        configs.googleSheetStats.range
-      ) {
+      if (configs.googleSheetStats?.id && configs.googleSheetStats.range) {
         const sheetId = configs.googleSheetStats.id;
         const range = configs.googleSheetStats.range;
         pushStatsToGoogleSheet = async (...stats: Stats[]) =>
@@ -374,8 +374,8 @@ async function initApp() {
       }
     }
   } catch (error) {
-    logger.error("Google integration: failed");
-    alert("Google integration: failed!\n\nContinue local only?")
+    logger.error("Google integration: failed:", error);
+    alert("Google integration: failed!\n\nContinue local only?");
   }
 
   let appOptions = getParameterOrSet<AppOptions>("appOptions", {
@@ -416,11 +416,8 @@ async function initApp() {
   const motionCanvas = app.getMotionCanvas();
   elements.videoPreviewDiv.append(videoCanvas, motionCanvas);
   motionCanvas.classList.add("motion");
-  if (motionCanvas.checkVisibility === undefined) {
-    // polyfill
-    motionCanvas.checkVisibility = () =>
-      (elements.showMotionInput as HTMLInputElement).checked;
-  }
+  motionCanvas.checkVisibility ??= () =>
+    (elements.showMotionInput as HTMLInputElement).checked; // polyfill
 
   app.updateOptions(appOptions);
 

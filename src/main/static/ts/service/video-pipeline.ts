@@ -1,38 +1,85 @@
 import { Logger } from "../util/logger";
 
+type Options = {
+  forceFps?: number;
+};
+
 const logger = new Logger("VideoPipeline");
 export class VideoPipeline {
-  private videoElement: HTMLVideoElement;
-  private ctx: CanvasRenderingContext2D;
-  private layers: VideoLayer[];
+  private readonly videoElement: HTMLVideoElement;
+  private readonly ctx: CanvasRenderingContext2D;
+  private readonly layers: VideoLayer[];
+  private options: Options;
+
+  private draw: () => void;
+  private drawTimeout?: any;
 
   constructor() {
     const canvasElement = document.createElement("canvas");
 
     this.videoElement = document.createElement("video");
-    this.ctx = canvasElement.getContext("2d") as CanvasRenderingContext2D;
+    const ctx = canvasElement.getContext("2d");
+    if (!ctx) throw new Error("canvas: failed to get 2D Rendering Context");
+    this.ctx = ctx;
+    this.layers = [];
+    this.options = {};
+    this.draw = () => {};
 
-    const _this = this;
-    function draw() {
-      if ((_this.videoElement.srcObject as MediaStream).active) {
-        _this.ctx.drawImage(_this.videoElement, 0, 0);
-        _this.layers.forEach((layer) => layer.draw(_this.ctx));
-      }
-      _this.videoElement.requestVideoFrameCallback(draw);
-    }
-    this.videoElement.requestVideoFrameCallback(draw);
+    this.updateDrawPipeline();
+    const videoFrameCallback = () => {
+      this.draw();
+      this.videoElement.requestVideoFrameCallback(videoFrameCallback);
+    };
+    this.videoElement.requestVideoFrameCallback(videoFrameCallback);
     this.videoElement.muted = true;
 
-    this.layers = [];
-
     logger.debug("instance created");
+  }
+
+  updateOptions(options: Partial<Options>) {
+    logger.debug("updateOptions called:", options);
+
+    this.options = {
+      ...this.options,
+      ...options,
+    };
+    this.updateDrawPipeline();
+  }
+
+  private updateDrawPipeline() {
+    logger.debug("updateDrawPipeline called");
+    if (this.options.forceFps) {
+      const delay = 1000 / this.options.forceFps;
+      this.draw = () => {
+        clearTimeout(this.drawTimeout);
+        if ((this.videoElement.srcObject as MediaStream).active) {
+          this.ctx.drawImage(this.videoElement, 0, 0);
+          this.layers.forEach((layer) => layer.draw(this.ctx));
+          this.drawTimeout = setInterval(() => this.draw(), delay);
+        }
+      };
+    } else {
+      clearTimeout(this.drawTimeout);
+      this.drawTimeout = undefined;
+      this.draw = () => {
+        if ((this.videoElement.srcObject as MediaStream).active) {
+          this.ctx.drawImage(this.videoElement, 0, 0);
+          this.layers.forEach((layer) => layer.draw(this.ctx));
+        }
+      };
+    }
   }
 
   private resizeCanvas(mediaStream: MediaStream) {
     logger.debug("resizeCanvas called:", mediaStream);
     const settings = mediaStream.getVideoTracks()[0].getSettings();
-    const width = settings.width as number;
-    const height = settings.height as number;
+    const width = settings.width;
+    const height = settings.height;
+    if (width === undefined || height === undefined) {
+      throw new Error(
+        "mediaStream: videoTrack[0] has undefined width or height",
+      );
+    }
 
     this.ctx.canvas.width = width;
     this.ctx.canvas.height = height;

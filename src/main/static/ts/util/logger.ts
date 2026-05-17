@@ -42,6 +42,7 @@ export function LoggerConfigReload() {
       LOGGER.timeEnd = (service, label) => {
         console.timeEnd([" PERF", service, label].join(" "));
       };
+    // fall through
     case "INFO":
       LOGGER.info = (service, ...messages) => {
         console.info(service, ...messages);
@@ -49,6 +50,7 @@ export function LoggerConfigReload() {
           subscriber(" INFO:", service, ...messages),
         );
       };
+    // fall through
     case "WARN":
       LOGGER.warn = (service, ...messages) => {
         console.warn(service, ...messages);
@@ -56,6 +58,7 @@ export function LoggerConfigReload() {
           subscriber(" WARN:", service, ...messages),
         );
       };
+    // fall through
     case "ERROR":
       break;
     default:

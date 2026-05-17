@@ -1,18 +1,18 @@
 import { Request, Response } from "express";
-import * as fs from "fs";
-import path from "path";
-import { PassThrough } from "stream";
+import * as fs from "node:fs";
+import path from "node:path";
+import { PassThrough } from "node:stream";
 import Google from "../service/google";
 
 const UPLOAD_PATH = process.env.UPLOAD_PATH || "./data/upload";
 const UPLOAD_STORAGE_QUOTA = process.env.UPLOAD_STORAGE_QUOTA
-  ? parseInt(process.env.UPLOAD_STORAGE_QUOTA)
+  ? Number.parseInt(process.env.UPLOAD_STORAGE_QUOTA)
   : 512 * 1024 * 1024; // Default is 512MB
 const UPLOAD_MAX_FILE_SIZE = process.env.UPLOAD_MAX_FILE_SIZE
-  ? parseInt(process.env.UPLOAD_MAX_FILE_SIZE)
+  ? Number.parseInt(process.env.UPLOAD_MAX_FILE_SIZE)
   : 32 * 1024 * 1024; // default is 32MB
 const UPLOAD_TIMEOUT = process.env.UPLOAD_TIMEOUT
-  ? parseInt(process.env.UPLOAD_TIMEOUT)
+  ? Number.parseInt(process.env.UPLOAD_TIMEOUT)
   : 60 * 1000; // default is 60s
 
 function sanitizeFilename(filename: string): string {
@@ -61,13 +61,11 @@ async function freeStorageSpace(
     fileStats.sort((a, b) => a.mtime - b.mtime);
 
     let freedSpace = 0;
-    const deletedFiles = [];
     for (const fileStat of fileStats) {
       if (freedSpace >= neededSpace) break;
       try {
         await fs.promises.unlink(fileStat.path);
         freedSpace += fileStat.size;
-        deletedFiles.push(fileStat.name);
         console.log(
           `Freed ${fileStat.size} bytes by deleting ${fileStat.name}`,
         );
@@ -83,31 +81,33 @@ async function freeStorageSpace(
   }
 }
 
-async function fileUploadHandler(req: Request, res: Response) {
+async function fileUploadHandler(
+  req: Request,
+  res: Response,
+  validatedHeaders: { fileName: string; contentLength: number },
+) {
   const uploadStartTime = Date.now();
-  const fileName = req.headers["x-filename"] as string;
-  const contentLength = parseInt(req.headers["content-length"] as string);
-  const sanitizedFilename = sanitizeFilename(fileName);
+  const sanitizedFilename = sanitizeFilename(validatedHeaders.fileName);
   const filePath = path.join(UPLOAD_PATH, sanitizedFilename);
   if (fs.existsSync(filePath)) {
     console.error(
       "Bad request: file already exists:",
       filePath,
-      `(original file name: "${fileName}")`,
+      `(original file name: "${validatedHeaders.fileName}")`,
     );
-    return res
-      .status(409)
-      .json({ error: `Conflict: "${fileName}" already exists` });
+    return res.status(409).json({
+      error: `Conflict: "${validatedHeaders.fileName}" already exists`,
+    });
   }
 
   await fs.promises.mkdir(UPLOAD_PATH, { recursive: true });
   const currentStorageUsed = await getStorageUsed(UPLOAD_PATH);
-  const projectedStorage = currentStorageUsed + contentLength;
+  const projectedStorage = currentStorageUsed + validatedHeaders.contentLength;
   const spaceNeeded = projectedStorage - UPLOAD_STORAGE_QUOTA;
   if (spaceNeeded > 0) {
     const freedSpace = await freeStorageSpace(UPLOAD_PATH, spaceNeeded);
     if (
-      currentStorageUsed - freedSpace + contentLength >
+      currentStorageUsed - freedSpace + validatedHeaders.contentLength >
       UPLOAD_STORAGE_QUOTA
     ) {
       console.error("Server error: insufficient storage on upload:", filePath);
@@ -131,7 +131,7 @@ async function fileUploadHandler(req: Request, res: Response) {
   writeStream.on("finish", async () => {
     const uploadDuration = Date.now() - uploadStartTime;
     console.log(
-      `Upload completed: ${sanitizedFilename} (${contentLength} bytes in ${uploadDuration}ms)`,
+      `Upload completed: ${sanitizedFilename} (${validatedHeaders.contentLength} bytes in ${uploadDuration}ms)`,
     );
     res.status(201).json({
       success: true,
@@ -165,12 +165,17 @@ async function fileUploadHandler(req: Request, res: Response) {
   );
 }
 
-async function googleDriveUploadHandler(req: Request, res: Response) {
+async function googleDriveUploadHandler(
+  req: Request,
+  res: Response,
+  validatedHeaders: {
+    fileName: string;
+    contentLength: number;
+    contentType: string;
+  },
+) {
   const uploadStartTime = Date.now();
-  const fileName = req.headers["x-filename"] as string;
-  const contentLength = parseInt(req.headers["content-length"] as string);
-  const contentType = req.headers["content-type"] as string;
-  const sanitizedFilename = sanitizeFilename(fileName);
+  const sanitizedFilename = sanitizeFilename(validatedHeaders.fileName);
 
   try {
     const stream = new PassThrough();
@@ -179,18 +184,22 @@ async function googleDriveUploadHandler(req: Request, res: Response) {
     let id: string | undefined;
     if (process.env.GOOGLE_DRIVE_FOLDER_ID) {
       id = await Google.Drive.upload(
-        fileName,
-        contentType,
+        sanitizedFilename,
+        validatedHeaders.contentType,
         stream,
         process.env.GOOGLE_DRIVE_FOLDER_ID,
       );
     } else {
-      id = await Google.Drive.upload(fileName, contentType, stream);
+      id = await Google.Drive.upload(
+        sanitizedFilename,
+        validatedHeaders.contentType,
+        stream,
+      );
     }
 
     const uploadDuration = Date.now() - uploadStartTime;
     console.log(
-      `Upload completed: Google Drive: ${id} (${contentLength} bytes in ${uploadDuration}ms)`,
+      `Upload completed: Google Drive: ${id} (${validatedHeaders.contentLength} bytes in ${uploadDuration}ms)`,
     );
     return res.status(201).json({ success: true });
   } catch (error) {
@@ -201,19 +210,30 @@ async function googleDriveUploadHandler(req: Request, res: Response) {
   }
 }
 
-function validateRequest(req: Request, res: Response) {
-  const contentLength = parseInt(req.headers["content-length"] || "0");
+function validateRequest(
+  req: Request,
+  res: Response,
+):
+  | {
+      fileName: string;
+      contentLength: number;
+      contentType: string;
+    }
+  | undefined {
+  const contentLength = req.headers["content-length"]
+    ? Number.parseInt(req.headers["content-length"])
+    : undefined;
   const contentType = req.headers["content-type"];
-  const fileName = req.headers["x-filename"] as string;
+  const fileName = req.headers["x-filename"];
 
-  if (!(contentLength > 0 && contentType && fileName)) {
-    console.error("Bad request: missing required headers:", {
+  if (!(contentLength && contentType && fileName)) {
+    console.error("Bad request: missing/invalid required headers:", {
       contentLength,
       contentType,
       fileName,
     });
     res.status(400).json({ error: "Missing required headers" });
-    return false;
+    return;
   }
   if (contentLength > UPLOAD_MAX_FILE_SIZE) {
     console.error(
@@ -223,7 +243,7 @@ function validateRequest(req: Request, res: Response) {
       fileName,
     );
     res.status(413).json({ error: "File too large" });
-    return false;
+    return;
   }
   if (!(contentType.includes("video/") || contentType.includes("audio/"))) {
     console.error(
@@ -233,9 +253,18 @@ function validateRequest(req: Request, res: Response) {
       fileName,
     );
     res.status(415).json({ error: "Only video/audio allowed" });
-    return false;
+    return;
   }
-  return true;
+  if (Array.isArray(fileName)) {
+    console.error("Bad request: multiple files:", fileName);
+    res.status(415).json({ error: "Only one file is allowed" });
+    return;
+  }
+  return {
+    contentLength,
+    contentType,
+    fileName,
+  };
 }
 
 export function getHandlerUpload() {
@@ -245,15 +274,17 @@ export function getHandlerUpload() {
       `Uploads will be saved in Google Drive: ${process.env.GOOGLE_DRIVE_FOLDER_ID ?? "root"}`,
     );
     handler = async (req: Request, res: Response) => {
-      if (!validateRequest(req, res)) return;
-      if (await googleDriveUploadHandler(req, res)) return;
-      fileUploadHandler(req, res);
+      const validatedHeaders = validateRequest(req, res);
+      if (!validatedHeaders) return;
+      if (await googleDriveUploadHandler(req, res, validatedHeaders)) return;
+      fileUploadHandler(req, res, validatedHeaders);
     };
   } else {
     console.log(`Uploads will be saved in local: ${UPLOAD_PATH}`);
     handler = async (req: Request, res: Response) => {
-      if (!validateRequest(req, res)) return;
-      fileUploadHandler(req, res);
+      const validatedHeaders = validateRequest(req, res);
+      if (!validatedHeaders) return;
+      fileUploadHandler(req, res, validatedHeaders);
     };
   }
   console.log(

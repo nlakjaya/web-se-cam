@@ -3,7 +3,7 @@ import { GoogleClass } from "./types";
 
 const logger = new Logger("GoogleSheet");
 export class GoogleSheet {
-  constructor(private google: GoogleClass) {
+  constructor(private readonly google: GoogleClass) {
     logger.debug("instance created");
   }
 

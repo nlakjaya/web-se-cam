@@ -1,9 +1,9 @@
 import { Request } from "express";
-import url from "url";
+import url from "node:url";
 import { WebSocket } from "ws";
 
 const SIGNALLING_MAX_CLIENTS_COUNT = process.env.SIGNALLING_MAX_CLIENTS_COUNT
-  ? parseInt(process.env.SIGNALLING_MAX_CLIENTS_COUNT)
+  ? Number.parseInt(process.env.SIGNALLING_MAX_CLIENTS_COUNT)
   : 16;
 
 const clients = new Map<string, WebSocket>();

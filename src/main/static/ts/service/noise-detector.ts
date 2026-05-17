@@ -16,8 +16,8 @@ export const defaultOptions: Options = {
 const logger = new Logger("NoiseDetector");
 export class NoiseDetector {
   private options: Options;
-  private audioContext: AudioContext;
-  private analyzer: AnalyserNode;
+  private readonly audioContext: AudioContext;
+  private readonly analyzer: AnalyserNode;
   private mediaStreamSource?: MediaStreamAudioSourceNode;
   private intervalId?: any;
   private triggers: ((instance: NoiseDetector) => void)[];
@@ -26,7 +26,7 @@ export class NoiseDetector {
 
   constructor() {
     this.options = defaultOptions;
-    this.audioContext = new window.AudioContext();
+    this.audioContext = new globalThis.AudioContext();
     this.analyzer = this.audioContext.createAnalyser();
     this.mediaStreamSource = undefined;
     this.peakLevel = 0;

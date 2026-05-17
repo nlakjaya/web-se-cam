@@ -3,7 +3,7 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import expressWs from "express-ws";
-import path from "path";
+import path from "node:path";
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ import { getHandlerStats } from "./handler/stats";
 import { getHandlerUpload } from "./handler/upload";
 import { getHandlerSubscribe } from "./handler/signaling";
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 3000;
 const STATIC_FILES = "./static";
 
 const app = expressWs(express()).app;

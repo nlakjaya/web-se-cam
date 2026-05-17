@@ -11,18 +11,18 @@ if (navigator.serviceWorker) {
     .catch(() => logger.debug("Service Worker registration failed:", error));
 }
 
-window.addEventListener("appinstalled", () => {
+globalThis.addEventListener("appinstalled", () => {
   logger.debug("app was installed");
 });
 
-window.addEventListener("beforeinstallprompt", (event) => {
+globalThis.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   logger.debug("app not installed yet");
-  window.beforeInstallPromptEvent = event;
+  globalThis.beforeInstallPromptEvent = event;
 });
 
-window.backupConfigs = () => JSON.stringify(Object.entries(localStorage));
-window.restoreConfigs = (configs) => {
+globalThis.backupConfigs = () => JSON.stringify(Object.entries(localStorage));
+globalThis.restoreConfigs = (configs) => {
   localStorage.clear();
   JSON.parse(configs).forEach(([k, v]) => localStorage.setItem(k, v));
 

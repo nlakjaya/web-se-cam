@@ -22,7 +22,7 @@ export class Sensor {
       case "Accelerometer":
       case "Gyroscope":
       case "Magnetometer":
-        supported = sensorType in window;
+        supported = sensorType in globalThis;
         if (supported) {
           await navigator.permissions.query({
             name: sensorType.toLowerCase(),
@@ -45,11 +45,17 @@ export class Sensor {
     (navigator as any).getBattery().then((battery: any) => {
       logger.debug("(native).getBattery called:", battery);
       function getETA() {
-        const eta = battery.charging
-          ? battery.chargingTime
-          : battery.dischargingTime;
-        if (eta != Infinity) {
-          return eta;
+        if (
+          battery.chargingTime !== undefined &&
+          battery.chargingTime != Infinity
+        ) {
+          return battery.chargingTime;
+        }
+        if (
+          battery.dischargingTime !== undefined &&
+          battery.dischargingTime != Infinity
+        ) {
+          return battery.dischargingTime;
         }
         return undefined;
       }
@@ -137,7 +143,7 @@ export class Sensor {
   ) {
     logger.debug("setSensorListener called:", sensorType, frequency);
     try {
-      const sensor = new (window as any)[sensorType]({
+      const sensor = new (globalThis as any)[sensorType]({
         frequency,
       });
       sensor.addEventListener("reading", (event: Event) => {

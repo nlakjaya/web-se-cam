@@ -2,7 +2,7 @@ import { google, sheets_v4 } from "googleapis";
 import { GoogleClass } from "./types";
 
 export class Sheet {
-  constructor(private google: GoogleClass) {}
+  constructor(private readonly google: GoogleClass) {}
 
   private async getSheets(): Promise<sheets_v4.Sheets> {
     const auth = await this.google.getAuthorization();

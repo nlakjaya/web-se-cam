@@ -39,7 +39,7 @@ export const defaultOptions: Options = {
 
 const logger = new Logger("VideoOverlay");
 export class VideoOverlay implements VideoLayer {
-  private stats: VideoStats;
+  private readonly stats: VideoStats;
   private options: Options;
 
   constructor() {

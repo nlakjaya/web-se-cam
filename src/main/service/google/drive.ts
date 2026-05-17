@@ -1,9 +1,9 @@
 import { drive_v3, google } from "googleapis";
-import Stream from "stream";
+import Stream from "node:stream";
 import { GoogleClass } from "./types";
 
 export class Drive {
-  constructor(private google: GoogleClass) {}
+  constructor(private readonly google: GoogleClass) {}
 
   private async getDrive(): Promise<drive_v3.Drive> {
     const auth = await this.google.getAuthorization();

@@ -7,12 +7,12 @@ export function getDeviceId(): string {
   return getParameter("deviceId", () => {
     logger.info("Generating...");
     const buffer = new Uint32Array(2);
-    window.crypto.getRandomValues(buffer);
+    globalThis.crypto.getRandomValues(buffer);
     const deviceId = buffer
       .reduce((str, word) => str + word.toString(32).substring(0, 6), "")
       .substring(0, 6)
       .toUpperCase();
     setParameter("deviceId", deviceId);
     return deviceId;
-  }) as string;
+  });
 }

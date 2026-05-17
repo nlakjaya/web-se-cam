@@ -15,11 +15,11 @@ type Handler = {
 
 const logger = new Logger("MediaRecorder");
 class MediaRecorderWrapper {
-  private options: Options;
-  private mediaStream: MediaStream;
+  private readonly options: Options;
+  private readonly mediaStream: MediaStream;
   private timeSlice?: number;
   private preRollIntervalId?: any;
-  private handlers: Handler[];
+  private readonly handlers: Handler[];
 
   constructor(options: Options, ...tracks: MediaStreamTrack[]) {
     this.options = options;
@@ -94,9 +94,11 @@ class MediaRecorderWrapper {
     if (this.preRollIntervalId) {
       clearInterval(this.preRollIntervalId);
       while ((preRoll && this.handlers.length) || this.handlers.length > 1) {
-        const handler = this.handlers.pop() as Handler;
-        handler.resolve = () => {};
-        handler.nativeRecorder.stop();
+        const handler = this.handlers.pop();
+        if (handler) {
+          handler.resolve = () => {};
+          handler.nativeRecorder.stop();
+        }
       }
     } else {
       preRollIntervalFunction();
@@ -116,9 +118,11 @@ class MediaRecorderWrapper {
       clearInterval(this.preRollIntervalId);
       this.preRollIntervalId = undefined;
       while (this.handlers.length > 1) {
-        const handler = this.handlers.pop() as Handler;
-        handler.resolve = () => {};
-        handler.nativeRecorder.stop();
+        const handler = this.handlers.pop();
+        if (handler) {
+          handler.resolve = () => {};
+          handler.nativeRecorder.stop();
+        }
       }
     }
 

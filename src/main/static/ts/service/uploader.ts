@@ -11,8 +11,6 @@ export class Uploader {
   private options: Options;
 
   constructor(url: string) {
-    const canvasElement = document.createElement("canvas");
-
     this.options = { url, mode: "blob" };
 
     logger.debug("instance created");
@@ -31,20 +29,22 @@ export class Uploader {
     try {
       switch (this.options.mode) {
         case "blob":
-          const response = await fetch(this.options.url, {
-            method: "POST",
-            headers: {
-              "Content-Type": blob.type,
-              "X-Filename": encodeURIComponent(filename),
-            },
-            body: blob,
-          });
-          if (response.status != 201) {
-            throw new Error(
-              `HTTP POST: ${response.status} ${response.statusText}`,
-            );
+          {
+            const response = await fetch(this.options.url, {
+              method: "POST",
+              headers: {
+                "Content-Type": blob.type,
+                "X-Filename": encodeURIComponent(filename),
+              },
+              body: blob,
+            });
+            if (response.status != 201) {
+              throw new Error(
+                `HTTP POST: ${response.status} ${response.statusText}`,
+              );
+            }
+            logger.debug("post success:", filename, await response.text());
           }
-          logger.debug("post success:", filename, await response.text());
           break;
         default:
           throw new Error("Unsupported mode:", this.options.mode);

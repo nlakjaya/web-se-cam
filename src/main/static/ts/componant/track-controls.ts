@@ -19,7 +19,7 @@ type Settings = Partial<{
 
 const logger = new Logger("TrackControls");
 export class TrackControls {
-  private capabilities: Capabilities;
+  private readonly capabilities: Capabilities;
   private settings: Settings;
   private applyConstraints?: (
     constrains: MediaTrackConstraints,
@@ -33,7 +33,7 @@ export class TrackControls {
     capabilities: MediaTrackCapabilities,
     settings: MediaTrackSettings,
   ) {
-    this.capabilities = capabilities as unknown as Capabilities;
+    this.capabilities = capabilities as any;
     this.settings = settings as Settings;
 
     logger.debug("instance created");

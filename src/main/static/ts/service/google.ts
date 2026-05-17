@@ -81,7 +81,7 @@ class GoogleClient {
           this.renewAccessToken().then(resolve).catch(reject);
         }, TOKEN_RENEW_WITH_CONSENT_DELAY_MS);
       const tokenClient = (
-        window as any
+        globalThis as any
       ).google.accounts.oauth2.initTokenClient({
         client_id: this.options.clientId,
         scope: this.options.scopes
@@ -95,7 +95,8 @@ class GoogleClient {
             );
             const token = {
               bearer: response.access_token,
-              expiry: Date.now() + (parseInt(response.expires_in) - 60) * 1000,
+              expiry:
+                Date.now() + (Number.parseInt(response.expires_in) - 60) * 1000,
             };
             this.options.prompt = "none";
             return resolve(token);

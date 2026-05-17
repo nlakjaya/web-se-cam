@@ -23,15 +23,17 @@ export class MotionDetector implements VideoLayer {
   private options: Options;
   private originalWidth: number;
   private originalHeight: number;
-  private ctx: CanvasRenderingContext2D;
+  private readonly ctx: CanvasRenderingContext2D;
   private previousFrame?: ImageData;
   private triggers: ((instance: MotionDetector) => void)[];
 
   constructor() {
     const canvasElement = document.createElement("canvas");
-    this.ctx = canvasElement.getContext("2d", {
+    const ctx = canvasElement.getContext("2d", {
       willReadFrequently: true,
-    }) as CanvasRenderingContext2D;
+    });
+    if (!ctx) throw new Error("canvas: failed to get 2D Rendering Context");
+    this.ctx = ctx;
 
     this.options = defaultOptions;
     this.originalWidth = 640;
@@ -116,40 +118,64 @@ export class MotionDetector implements VideoLayer {
       if (!this.options.previewMotionBlur) {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
       }
-      this.motionVisualizeInit();
-    }
-    if (this.previousFrame) {
-      let motionDetected = false;
-      pixelsIterator: for (
-        let i = 0;
-        i < this.previousFrame.data.length;
-        i += 4
-      ) {
-        subPixelsIterator: for (let j = 0; j < 3; j++) {
-          if (
-            Math.abs(this.previousFrame.data[i + j] - thisFrame.data[i + j]) >
-            this.options.detectionThreshold
-          ) {
-            motionDetected = true;
-            if (ctxVisible) {
-              let y = i / 4;
-              const x = y % this.ctx.canvas.width;
-              y = Math.round(y / this.ctx.canvas.width);
-              this.motionVisualize(x, y);
-              break subPixelsIterator;
-            } else {
-              break pixelsIterator;
-            }
-          }
+      if (this.previousFrame) {
+        if (this.motionDetectWithVisualization(thisFrame, this.previousFrame)) {
+          this.triggers.forEach((trigger) =>
+            setTimeout(() => trigger(this), 0),
+          );
         }
       }
-      if (motionDetected) {
+    } else if (this.previousFrame) {
+      if (this.motionDetect(thisFrame, this.previousFrame)) {
         this.triggers.forEach((trigger) => setTimeout(() => trigger(this), 0));
       }
     }
+
     this.previousFrame = thisFrame;
   }
 
+  private motionDetect(
+    thisFrame: ImageData,
+    previousFrame: ImageData,
+  ): boolean {
+    for (let i = 0; i < previousFrame.data.length; i += 4) {
+      for (let j = 0; j < 3; j++) {
+        if (
+          Math.abs(previousFrame.data[i + j] - thisFrame.data[i + j]) >
+          this.options.detectionThreshold
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private motionDetectWithVisualization(
+    thisFrame: ImageData,
+    previousFrame: ImageData,
+  ): boolean {
+    this.motionVisualizeInit();
+    let motionDetected = false;
+    for (let i = 0; i < previousFrame.data.length; i += 4) {
+      for (let j = 0; j < 3; j++) {
+        if (
+          Math.abs(previousFrame.data[i + j] - thisFrame.data[i + j]) >
+          this.options.detectionThreshold
+        ) {
+          motionDetected = true;
+          let y = i / 4;
+          const x = y % this.ctx.canvas.width;
+          y = Math.round(y / this.ctx.canvas.width);
+          this.motionVisualize(x, y);
+          break;
+        }
+      }
+    }
+    return motionDetected;
+  }
+
+  private motionVisualize: (x: number, y: number) => void = () => {};
   private motionVisualizeInit() {
     if (this.options.marker) {
       const size = this.options.marker.size;
@@ -196,9 +222,7 @@ export class MotionDetector implements VideoLayer {
           break;
       }
     } else {
-      this.motionVisualize = (x: number, y: number) => {};
+      this.motionVisualize = () => {};
     }
   }
-
-  private motionVisualize(_x: number, _y: number) {}
 }

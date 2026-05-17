@@ -2,12 +2,12 @@ import { Logger } from "../util/logger";
 
 const logger = new Logger("P2P");
 export class P2P {
-  private peerConnection: RTCPeerConnection;
+  private readonly peerConnection: RTCPeerConnection;
   private channel?: RTCDataChannel; // TODO: multiple channels and event listeners
 
   constructor(
-    config: RTCConfiguration = {},
     onIceCandidate: (iceCandidate: RTCIceCandidate) => Promise<void>,
+    config: RTCConfiguration = {},
   ) {
     this.peerConnection = new RTCPeerConnection(config);
 

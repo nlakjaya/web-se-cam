@@ -24,6 +24,7 @@ export type Stats = {
 };
 
 export type AppOptions = {
+  videoPipeline?: Parameters<VideoPipeline["updateOptions"]>[0];
   videoOverlay?: Parameters<VideoOverlay["updateOptions"]>[0];
   nightVision?: Parameters<NightVision["updateOptions"]>[0];
   motionDetector?: Parameters<MotionDetector["updateOptions"]>[0];
@@ -47,13 +48,13 @@ export type ActivateOptions = {
 
 const logger = new Logger("App");
 export class App {
-  private deviceAccess: DeviceAccess;
-  private videoPipeline: VideoPipeline;
-  private videoStats: VideoStats;
-  private videoOverlay: VideoOverlay;
-  private motionDetector: MotionDetector;
-  private nightVision: NightVision;
-  private noiseDetector: NoiseDetector;
+  private readonly deviceAccess: DeviceAccess;
+  private readonly videoPipeline: VideoPipeline;
+  private readonly videoStats: VideoStats;
+  private readonly videoOverlay: VideoOverlay;
+  private readonly motionDetector: MotionDetector;
+  private readonly nightVision: NightVision;
+  private readonly noiseDetector: NoiseDetector;
 
   private mediaStream: MediaStream | null;
   private continuousMediaRecorder: MediaRecorder | null;
@@ -62,8 +63,8 @@ export class App {
   private triggerMediaRecorder: MediaRecorder | null;
   private triggerRecorder: ContinuousRecorder | null;
 
-  private sensor: Sensor;
-  private stats: {
+  private readonly sensor: Sensor;
+  private readonly stats: {
     interval?: number;
     timeoutId?: any;
     battery?: boolean;
@@ -73,9 +74,9 @@ export class App {
   private wakeLock?: any;
 
   constructor(
-    private onSave: (filename: string, blob: Blob) => void,
-    private onStats: (stats: Stats) => void,
-    private audioLevelListener: (level: number) => void,
+    private readonly onSave: (filename: string, blob: Blob) => void,
+    private readonly onStats: (stats: Stats) => void,
+    private readonly audioLevelListener: (level: number) => void,
   ) {
     this.deviceAccess = new DeviceAccess();
     this.videoPipeline = new VideoPipeline();
@@ -108,6 +109,8 @@ export class App {
   }
 
   updateOptions(options: AppOptions) {
+    if (options.videoPipeline)
+      this.videoPipeline.updateOptions(options.videoPipeline);
     if (options.videoOverlay)
       this.videoOverlay.updateOptions(options.videoOverlay);
     if (options.nightVision)
@@ -139,7 +142,7 @@ export class App {
     if (this.stats.timeoutId) {
       clearTimeout(this.stats.timeoutId);
       this.stats.timeoutId = undefined;
-      // logger.debug("send stats schedule cancelled");
+      logger.debug("send stats schedule cancelled");
     }
     const completeStats = {
       status: this.mediaStream ? "active" : "inactive",
@@ -154,7 +157,7 @@ export class App {
         () => this.sendStats(),
         this.stats.interval,
       );
-      // logger.debug("send stats scheduled in ms:", this.statsInterval);
+      logger.debug("send stats scheduled in ms:", this.stats.interval);
     }
   }
 
@@ -178,22 +181,21 @@ export class App {
     const videoTrack = this.mediaStream.getVideoTracks()[0];
     const audioTrack = this.mediaStream.getAudioTracks()[0];
 
-    (window as any).videoTrack = videoTrack; // for debugging
-    (window as any).audioTrack = audioTrack; // for debugging
+    (globalThis as any).videoTrack = videoTrack; // for debugging
+    (globalThis as any).audioTrack = audioTrack; // for debugging
 
     this.videoPipeline.setMediaStream(this.mediaStream);
     this.noiseDetector.setMediaStream(this.mediaStream);
 
-    const _this = this;
-    function levelIndicatorAnimator() {
-      if (_this.mediaStream?.active) {
-        _this.audioLevelListener(_this.noiseDetector.peakLevel);
+    const levelIndicatorAnimator = () => {
+      if (this.mediaStream?.active) {
+        this.audioLevelListener(this.noiseDetector.peakLevel);
         requestAnimationFrame(levelIndicatorAnimator);
       } else {
         logger.debug("level indicator: stopped");
-        _this.audioLevelListener(0);
+        this.audioLevelListener(0);
       }
-    }
+    };
     levelIndicatorAnimator();
     logger.debug("level indicator: started");
 
@@ -246,10 +248,8 @@ export class App {
         const trigger = (triggerType: string) => {
           if (this.triggerTimeoutId) {
             clearTimeout(this.triggerTimeoutId);
-            // logger.debug("trigger release schedule cancelled");
-          } else if (!this.mediaStream) {
-            return;
-          } else {
+            logger.debug("trigger release schedule cancelled");
+          } else if (this.mediaStream) {
             triggerRecorder.updateOptions({
               fileNaming: `%YYYY%MM%DD_%hh%mm%ss-${options.deviceId}-${triggerType}%n`,
             });
@@ -259,9 +259,11 @@ export class App {
               triggerRecorder.start(this.triggerMediaRecorder);
             }
             this.sendStats({ status: triggerType });
+          } else {
+            return;
           }
           this.triggerTimeoutId = setTimeout(() => triggerRelease(), releaseMs);
-          // logger.debug("trigger release scheduled in ms:", releaseMs);
+          logger.debug("trigger release scheduled in ms:", releaseMs);
         };
         if (options.triggerRecording.triggers.includes("motion")) {
           this.motionDetector.addTrigger(() => trigger("motion"));
@@ -274,13 +276,19 @@ export class App {
 
     if (this.stats.battery && (await this.sensor.isSupported("Battery"))) {
       this.sensor.setBatteryListener((battery) => {
-        this.sendStats({
+        const stat = {
           ...(battery.level != undefined && { batteryLevel: battery.level }),
           ...(battery.charging != undefined && {
             batteryCharging: battery.charging,
           }),
-          batteryEta: battery.eta,
-        });
+          ...(battery.eta != undefined && { batteryEta: battery.eta }),
+        };
+        if (
+          Object.keys(stat).length > 1 ||
+          (stat.batteryEta !== 0 && stat.batteryEta !== undefined)
+        ) {
+          this.sendStats(stat);
+        }
       });
       this.stats.battery = undefined;
     }
