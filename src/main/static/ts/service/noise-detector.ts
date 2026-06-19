@@ -89,8 +89,8 @@ export class NoiseDetector {
     this.triggers.push(trigger);
   }
 
-  removeTriggers() {
-    logger.debug("removeTriggers called");
+  clearTriggers() {
+    logger.debug("clearTriggers called");
     this.triggers = [];
   }
 }

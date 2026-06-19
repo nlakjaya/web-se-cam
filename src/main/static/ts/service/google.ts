@@ -61,8 +61,11 @@ class GoogleClient {
         throw new Error(errorMsg);
       }
       this.renewingAccessToken = true;
-      this.options.token = await this.renewAccessToken();
-      this.renewingAccessToken = false;
+      try {
+        this.options.token = await this.renewAccessToken();
+      } finally {
+        this.renewingAccessToken = false;
+      }
       this.options.renewTokenEvent?.(this.options.token);
     }
     return this.options.token;

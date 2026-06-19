@@ -283,12 +283,11 @@ export class App {
           }),
           ...(battery.eta != undefined && { batteryEta: battery.eta }),
         };
-        if (
-          Object.keys(stat).length > 1 ||
-          (stat.batteryEta !== 0 && stat.batteryEta !== undefined)
-        ) {
-          this.sendStats(stat);
+        const keys = Object.keys(stat);
+        if (keys.length == 1 && keys[0] == "batteryEta" && !stat.batteryEta) {
+          return;
         }
+        this.sendStats(stat);
       });
       this.stats.battery = undefined;
     }
@@ -321,8 +320,8 @@ export class App {
     this.mediaStream = null;
     this.videoPipeline.clearCanvas();
     this.motionDetector.clearHistory();
-    this.motionDetector.removeTriggers();
-    this.noiseDetector.removeTriggers();
+    this.motionDetector.clearTriggers();
+    this.noiseDetector.clearTriggers();
 
     if (this.triggerTimeoutId) {
       clearTimeout(this.triggerTimeoutId);
